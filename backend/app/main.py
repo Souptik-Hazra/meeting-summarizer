@@ -1,0 +1,36 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from app.config import settings
+
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    version=settings.VERSION,
+    description="API for converting meeting audio into structured meeting intelligence.",
+)
+
+# Configure CORS
+origins = [settings.FRONTEND_URL]
+if settings.FRONTEND_URL != "http://localhost:5173":
+    origins.append("http://localhost:5173")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.get("/health", tags=["System"])
+async def health_check():
+    """Health check endpoint to verify API service status."""
+    return {
+        "status": "ok",
+        "service": "meeting-summarizer-api",
+    }
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
