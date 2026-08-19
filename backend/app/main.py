@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
+from app.routes.meeting import router as meeting_router
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -20,6 +21,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Register Routers
+app.include_router(meeting_router)
 
 
 @app.get("/health", tags=["System"])

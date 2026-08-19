@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Sparkles, Mic, FileText, CheckSquare, ListChecks, ShieldCheck, Activity } from 'lucide-react';
+import { Sparkles, Mic, FileText, CheckSquare, ShieldCheck, Activity } from 'lucide-react';
 import AudioUpload from '../components/AudioUpload';
-import { checkHealth } from '../services/api';
+import { checkHealth, uploadMeetingAudio } from '../services/api';
 
 export default function Home() {
-  const [selectedFile, setSelectedFile] = useState(null);
   const [apiHealth, setApiHealth] = useState({ status: 'checking', service: '' });
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(null);
+  const [uploadError, setUploadError] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -21,8 +23,24 @@ export default function Home() {
     };
   }, []);
 
-  const handleFileSelect = (file) => {
-    setSelectedFile(file);
+  const handleUpload = async (file) => {
+    setIsUploading(true);
+    setUploadError(null);
+    setUploadSuccess(null);
+
+    try {
+      const response = await uploadMeetingAudio(file);
+      setUploadSuccess(response);
+    } catch (err) {
+      setUploadError(err.message || 'Failed to upload and store audio file.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleReset = () => {
+    setUploadSuccess(null);
+    setUploadError(null);
   };
 
   return (
@@ -69,7 +87,13 @@ export default function Home() {
 
       {/* Audio Upload Container */}
       <section className="relative">
-        <AudioUpload onFileSelect={handleFileSelect} />
+        <AudioUpload 
+          onUpload={handleUpload} 
+          isUploading={isUploading}
+          uploadSuccess={uploadSuccess}
+          uploadError={uploadError}
+          onReset={handleReset}
+        />
       </section>
 
       {/* Pipeline Architecture Cards */}

@@ -15,6 +15,7 @@ class Settings:
     # Supabase Configuration
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
     SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "")
+    SUPABASE_STORAGE_BUCKET: str = os.getenv("SUPABASE_STORAGE_BUCKET", "meeting-audio")
     
     # AI Providers Configuration
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
