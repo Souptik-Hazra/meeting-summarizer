@@ -198,7 +198,8 @@ def process_meeting_pipeline(
         err_str = str(exc1).lower()
         if "validation" in err_str or "structured output" in err_str:
             is_validation_failure = True
-        logger.warning(f"Summarization Attempt 1 failed for meeting {meeting_id}: {str(exc1)}. Retrying once...")
+        logger.warning(f"Summarization Attempt 1 failed for meeting {meeting_id}: {str(exc1)}. Retrying once in 1.5s...")
+        time.sleep(1.5)
         
         # Attempt 2 (Retry Once)
         try:
