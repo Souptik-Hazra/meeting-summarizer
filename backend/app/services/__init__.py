@@ -24,6 +24,13 @@ from app.services.transcription import (
     transcribe_audio,
     process_transcription_for_meeting,
 )
+from app.services.summarization import (
+    SummarizationError,
+    get_gemini_client,
+    load_prompt_template,
+    generate_meeting_summary,
+    process_summarization_for_meeting,
+)
 
 __all__ = [
     "DatabaseError",
@@ -46,4 +53,9 @@ __all__ = [
     "normalize_transcript",
     "transcribe_audio",
     "process_transcription_for_meeting",
+    "SummarizationError",
+    "get_gemini_client",
+    "load_prompt_template",
+    "generate_meeting_summary",
+    "process_summarization_for_meeting",
 ]

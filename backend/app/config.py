@@ -22,7 +22,7 @@ class Settings:
     GROQ_MODEL: str = "whisper-large-v3"
     
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
-    GEMINI_MODEL: str = "gemini-2.5-flash"
+    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-flash-lite-latest")
     
     # LLMOps & Prompt Versioning
     PROMPT_VERSION: str = "v1"

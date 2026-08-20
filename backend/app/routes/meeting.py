@@ -2,6 +2,7 @@ import uuid
 import logging
 from fastapi import APIRouter, UploadFile, File, HTTPException, status
 from app.schemas.meeting import MeetingCreate, MeetingStatus
+from app.schemas.summary import MeetingSummarizeResponse
 from app.services.storage import (
     FileValidationError,
     StorageError,
@@ -13,6 +14,7 @@ from app.services.storage import (
 )
 from app.services.database import create_meeting_record, DatabaseError
 from app.services.transcription import process_transcription_for_meeting, TranscriptionError
+from app.services.summarization import process_summarization_for_meeting, SummarizationError
 
 logger = logging.getLogger(__name__)
 
@@ -140,4 +142,49 @@ async def transcribe_meeting(meeting_id: str):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred during transcription."
+        )
+
+
+@router.post("/{meeting_id}/summarize", response_model=MeetingSummarizeResponse, status_code=status.HTTP_200_OK)
+async def summarize_meeting(meeting_id: str):
+    """
+    Triggers Gemini 2.5 Flash structured summarization for a meeting in SUMMARIZING state.
+    Validates transcript, generates structured output with Pydantic gate, persists intelligence,
+    and transitions meeting status to COMPLETED.
+    """
+    try:
+        updated_record = process_summarization_for_meeting(meeting_id)
+        return MeetingSummarizeResponse(
+            meeting_id=updated_record.get("meeting_id", meeting_id),
+            status=updated_record.get("status", MeetingStatus.COMPLETED.value),
+            summary=updated_record.get("summary"),
+            key_points=updated_record.get("key_points") or [],
+            decisions=updated_record.get("decisions") or [],
+            action_items=updated_record.get("action_items") or [],
+            summarization_time=updated_record.get("summarization_time"),
+            model_name=updated_record.get("model_name"),
+            prompt_version=updated_record.get("prompt_version"),
+        )
+    except SummarizationError as e:
+        err_msg = str(e)
+        if "not found" in err_msg.lower():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Meeting with ID '{meeting_id}' not found."
+            )
+        if "requires status 'summarizing'" in err_msg.lower() or "no transcript available" in err_msg.lower():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=err_msg
+            )
+        logger.error(f"Summarization error for meeting {meeting_id}: {err_msg}")
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Summarization service failed to generate structured intelligence."
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error summarizing meeting {meeting_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred during meeting summarization."
         )

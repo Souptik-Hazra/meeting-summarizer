@@ -6,6 +6,7 @@ from app.main import app
 from app.services.storage import StorageError
 from app.services.database import DatabaseError
 from app.services.transcription import TranscriptionError
+from app.config import settings
 
 client = TestClient(app)
 
@@ -138,3 +139,71 @@ def test_transcribe_meeting_service_failure():
         response = client.post("/api/meetings/err-id/transcribe")
         assert response.status_code == 502
         assert "transcription service failed" in response.json()["detail"].lower()
+
+
+def test_summarize_meeting_success():
+    with patch("app.routes.meeting.process_summarization_for_meeting") as mock_process:
+        mock_process.return_value = {
+            "meeting_id": "test-sum-123",
+            "status": "COMPLETED",
+            "summary": "Meeting summary text.",
+            "key_points": ["Point 1", "Point 2"],
+            "decisions": ["Decision 1"],
+            "action_items": [{"task": "Task 1", "owner": "Alice", "deadline": "Friday"}],
+            "summarization_time": 3.14,
+            "model_name": settings.GEMINI_MODEL,
+            "prompt_version": "v1"
+        }
+
+        response = client.post("/api/meetings/test-sum-123/summarize")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["meeting_id"] == "test-sum-123"
+        assert data["status"] == "COMPLETED"
+        assert data["summary"] == "Meeting summary text."
+        assert len(data["key_points"]) == 2
+        assert len(data["decisions"]) == 1
+        assert len(data["action_items"]) == 1
+        assert data["summarization_time"] == 3.14
+        assert data["model_name"] == settings.GEMINI_MODEL
+
+
+def test_summarize_meeting_not_found():
+    from app.services.summarization import SummarizationError
+    with patch("app.routes.meeting.process_summarization_for_meeting") as mock_process:
+        mock_process.side_effect = SummarizationError("Meeting with ID 'missing-id' not found.")
+
+        response = client.post("/api/meetings/missing-id/summarize")
+        assert response.status_code == 404
+        assert "not found" in response.json()["detail"].lower()
+
+
+def test_summarize_meeting_invalid_state():
+    from app.services.summarization import SummarizationError
+    with patch("app.routes.meeting.process_summarization_for_meeting") as mock_process:
+        mock_process.side_effect = SummarizationError("Meeting 'm1' is in status 'PENDING'. Summarization requires status 'SUMMARIZING'.")
+
+        response = client.post("/api/meetings/m1/summarize")
+        assert response.status_code == 400
+        assert "requires status 'summarizing'" in response.json()["detail"].lower()
+
+
+def test_summarize_meeting_missing_transcript():
+    from app.services.summarization import SummarizationError
+    with patch("app.routes.meeting.process_summarization_for_meeting") as mock_process:
+        mock_process.side_effect = SummarizationError("Meeting 'm2' has no transcript available for summarization.")
+
+        response = client.post("/api/meetings/m2/summarize")
+        assert response.status_code == 400
+        assert "no transcript available" in response.json()["detail"].lower()
+
+
+def test_summarize_meeting_service_failure():
+    from app.services.summarization import SummarizationError
+    with patch("app.routes.meeting.process_summarization_for_meeting") as mock_process:
+        mock_process.side_effect = SummarizationError("Gemini API generation failed.")
+
+        response = client.post("/api/meetings/err-id/summarize")
+        assert response.status_code == 502
+        assert "summarization service failed" in response.json()["detail"].lower()
+

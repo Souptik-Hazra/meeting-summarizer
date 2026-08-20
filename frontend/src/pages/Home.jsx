@@ -49,7 +49,7 @@ export default function Home() {
       <div className="text-center space-y-4 max-w-3xl mx-auto">
         <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-sky-950/60 border border-sky-500/30 text-sky-300 text-xs font-medium">
           <Sparkles className="w-3.5 h-3.5" />
-          <span>Groq Whisper & Gemini 2.5 Flash Pipeline</span>
+          <span>Groq Whisper & Gemini Flash Pipeline</span>
         </div>
 
         <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
@@ -112,7 +112,7 @@ export default function Home() {
           <div className="w-9 h-9 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
             <FileText className="w-5 h-5" />
           </div>
-          <h3 className="font-semibold text-slate-200 text-sm">Gemini 2.5 Flash</h3>
+          <h3 className="font-semibold text-slate-200 text-sm">Gemini Flash</h3>
           <p className="text-xs text-slate-400 leading-relaxed">
             Structured analysis extracting discussion topics, core takeaways, and takeaways.
           </p>
