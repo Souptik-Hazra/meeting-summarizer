@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { FileText, Copy, Check, Search, X } from 'lucide-react';
+import { FileText, Copy, Check, Search, X, Download } from 'lucide-react';
 
-export default function Transcript({ transcript = '' }) {
+export default function Transcript({ transcript = '', originalFilename = 'meeting' }) {
   const [copied, setCopied] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -14,6 +14,20 @@ export default function Transcript({ transcript = '' }) {
     } catch (err) {
       console.error('Failed to copy transcript:', err);
     }
+  };
+
+  const handleDownloadTxt = () => {
+    if (!transcript) return;
+    const blob = new Blob([transcript], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const baseName = originalFilename ? originalFilename.replace(/\.[^/.]+$/, '') : 'meeting';
+    a.download = `${baseName}-transcript.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const wordCount = useMemo(() => {
@@ -39,7 +53,7 @@ export default function Transcript({ transcript = '' }) {
 
     return parts.map((part, index) => 
       regex.test(part) ? (
-        <mark key={index} className="bg-amber-400/30 text-amber-200 px-0.5 rounded border border-amber-400/40">
+        <mark key={index} className="bg-amber-400/30 text-amber-200 px-0.5 rounded border border-amber-400/40 font-medium">
           {part}
         </mark>
       ) : (
@@ -65,7 +79,7 @@ export default function Transcript({ transcript = '' }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
             {/* Search Box */}
             <div className="relative">
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -74,7 +88,7 @@ export default function Transcript({ transcript = '' }) {
                 placeholder="Search transcript..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 pr-7 py-1.5 rounded-lg bg-slate-950/60 border border-slate-800 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500/50 w-44 sm:w-52 transition-all font-mono"
+                className="pl-8 pr-7 py-1.5 rounded-lg bg-slate-950/60 border border-slate-800 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500/50 w-36 sm:w-48 transition-all font-mono"
               />
               {searchQuery && (
                 <button 
@@ -85,6 +99,17 @@ export default function Transcript({ transcript = '' }) {
                 </button>
               )}
             </div>
+
+            {/* Download TXT Button */}
+            <button
+              onClick={handleDownloadTxt}
+              disabled={!transcript}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 border border-slate-700 transition-all cursor-pointer disabled:opacity-50"
+              title="Download Transcript as Text file"
+            >
+              <Download className="w-3.5 h-3.5 text-sky-400" />
+              <span className="hidden sm:inline">Download</span>
+            </button>
 
             {/* Copy Button */}
             <button
