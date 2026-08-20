@@ -29,6 +29,6 @@ class Settings:
     
     # File Limits (e.g. 25MB max audio file size)
     MAX_FILE_SIZE_BYTES: int = 25 * 1024 * 1024
-    ALLOWED_AUDIO_EXTENSIONS: set = {".mp3", ".wav", ".m4a", ".aac", ".flac", ".ogg"}
+    ALLOWED_AUDIO_EXTENSIONS: set = {".mp3", ".wav", ".m4a", ".aac", ".flac", ".ogg", ".webm"}
 
 settings = Settings()

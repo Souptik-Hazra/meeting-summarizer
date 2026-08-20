@@ -1,9 +1,21 @@
 import { useState, useEffect } from 'react';
-import { Sparkles, Mic, FileText, CheckSquare, ShieldCheck, Activity, Search, ArrowRight } from 'lucide-react';
+import { 
+  Sparkles, 
+  Mic, 
+  UploadCloud, 
+  FileText, 
+  CheckSquare, 
+  ShieldCheck, 
+  Activity, 
+  Search, 
+  ArrowRight 
+} from 'lucide-react';
 import AudioUpload from '../components/AudioUpload';
+import AudioRecorder from '../components/AudioRecorder';
 import { checkHealth, uploadMeetingAudio } from '../services/api';
 
 export default function Home({ onNavigateToMeeting }) {
+  const [inputMode, setInputMode] = useState('upload'); // 'upload' | 'record'
   const [apiHealth, setApiHealth] = useState({ status: 'checking', service: '' });
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(null);
@@ -99,15 +111,58 @@ export default function Home({ onNavigateToMeeting }) {
         </div>
       </div>
 
-      {/* Audio Upload Container */}
+      {/* Input Mode Selector */}
+      <div className="flex items-center justify-center gap-2 max-w-xs mx-auto p-1 rounded-xl bg-slate-900/80 border border-slate-800">
+        <button
+          type="button"
+          onClick={() => {
+            setInputMode('upload');
+            handleReset();
+          }}
+          disabled={isUploading}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            inputMode === 'upload'
+              ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30 shadow-sm'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <UploadCloud className="w-3.5 h-3.5" />
+          <span>Upload File</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setInputMode('record');
+            handleReset();
+          }}
+          disabled={isUploading}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            inputMode === 'record'
+              ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30 shadow-sm'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Mic className="w-3.5 h-3.5" />
+          <span>Record Live</span>
+        </button>
+      </div>
+
+      {/* Main Audio Ingestion Section */}
       <section className="relative">
-        <AudioUpload 
-          onUpload={handleUpload} 
-          isUploading={isUploading}
-          uploadSuccess={uploadSuccess}
-          uploadError={uploadError}
-          onReset={handleReset}
-        />
+        {inputMode === 'upload' ? (
+          <AudioUpload 
+            onUpload={handleUpload} 
+            isUploading={isUploading}
+            uploadSuccess={uploadSuccess}
+            uploadError={uploadError}
+            onReset={handleReset}
+          />
+        ) : (
+          <AudioRecorder
+            onRecorded={handleUpload}
+            isUploading={isUploading}
+          />
+        )}
       </section>
 
       {/* Lookup Existing Meeting ID */}
