@@ -31,6 +31,10 @@ from app.services.summarization import (
     generate_meeting_summary,
     process_summarization_for_meeting,
 )
+from app.services.pipeline import (
+    PipelineError,
+    process_meeting_pipeline,
+)
 
 __all__ = [
     "DatabaseError",
@@ -58,4 +62,6 @@ __all__ = [
     "load_prompt_template",
     "generate_meeting_summary",
     "process_summarization_for_meeting",
+    "PipelineError",
+    "process_meeting_pipeline",
 ]

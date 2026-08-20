@@ -1,7 +1,7 @@
 import uuid
 import logging
-from fastapi import APIRouter, UploadFile, File, HTTPException, status
-from app.schemas.meeting import MeetingCreate, MeetingStatus
+from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks, status
+from app.schemas.meeting import MeetingCreate, MeetingStatus, MeetingResponse, MeetingStatusResponse
 from app.schemas.summary import MeetingSummarizeResponse
 from app.services.storage import (
     FileValidationError,
@@ -12,9 +12,14 @@ from app.services.storage import (
     upload_audio_file,
     delete_audio_file,
 )
-from app.services.database import create_meeting_record, DatabaseError
+from app.services.database import (
+    create_meeting_record,
+    get_meeting_record,
+    DatabaseError,
+)
 from app.services.transcription import process_transcription_for_meeting, TranscriptionError
 from app.services.summarization import process_summarization_for_meeting, SummarizationError
+from app.services.pipeline import process_meeting_pipeline, PipelineError
 
 logger = logging.getLogger(__name__)
 
@@ -22,10 +27,14 @@ router = APIRouter(prefix="/api/meetings", tags=["Meetings"])
 
 
 @router.post("/upload", status_code=status.HTTP_201_CREATED)
-async def upload_meeting(file: UploadFile = File(...)):
+async def upload_meeting(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...)
+):
     """
     Receives meeting audio recording, validates format and size, stores in Supabase Storage,
-    creates the initial database record with status PENDING, and returns meeting ID and status.
+    creates the initial database record with status PENDING, schedules the automated background pipeline,
+    and returns HTTP 201 immediately with meeting ID and status.
     """
     if not file or not file.filename or not file.filename.strip():
         raise HTTPException(
@@ -89,7 +98,6 @@ async def upload_meeting(file: UploadFile = File(...)):
         created_record = create_meeting_record(meeting_data)
     except DatabaseError as e:
         logger.error(f"Database error creating meeting {meeting_id}, cleaning up storage: {str(e)}")
-        # Clean up uploaded storage file to prevent orphaned objects
         delete_audio_file(storage_path)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -103,6 +111,9 @@ async def upload_meeting(file: UploadFile = File(...)):
             detail="Unexpected database error occurred."
         )
 
+    # 6. ONLY AFTER successful storage + DB record creation, schedule the background pipeline task
+    background_tasks.add_task(process_meeting_pipeline, meeting_id)
+
     return {
         "meeting_id": created_record.get("meeting_id", meeting_id),
         "original_filename": created_record.get("original_filename", safe_original_name),
@@ -110,12 +121,95 @@ async def upload_meeting(file: UploadFile = File(...)):
     }
 
 
+@router.get("/{meeting_id}/status", response_model=MeetingStatusResponse, status_code=status.HTTP_200_OK)
+async def get_meeting_processing_status(meeting_id: str):
+    """
+    Returns the live processing status and failure information for a meeting.
+    Used for frontend polling.
+    """
+    try:
+        record = get_meeting_record(meeting_id)
+    except DatabaseError as e:
+        logger.error(f"Database error fetching status for {meeting_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Database error retrieving meeting status."
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error fetching status for {meeting_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unexpected error occurred."
+        )
+
+    if not record:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Meeting with ID '{meeting_id}' not found."
+        )
+
+    return MeetingStatusResponse(
+        meeting_id=record.get("meeting_id", meeting_id),
+        status=record.get("status", MeetingStatus.PENDING),
+        failure_stage=record.get("failure_stage"),
+        error_message=record.get("error_message"),
+        created_at=record.get("created_at"),
+        updated_at=record.get("updated_at"),
+    )
+
+
+@router.get("/{meeting_id}", response_model=MeetingResponse, status_code=status.HTTP_200_OK)
+async def get_meeting_details(meeting_id: str):
+    """
+    Returns complete meeting record with structured intelligence, transcript, and telemetry timings.
+    """
+    try:
+        record = get_meeting_record(meeting_id)
+    except DatabaseError as e:
+        logger.error(f"Database error fetching details for {meeting_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Database error retrieving meeting details."
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error fetching details for {meeting_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unexpected error occurred."
+        )
+
+    if not record:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Meeting with ID '{meeting_id}' not found."
+        )
+
+    return MeetingResponse(
+        meeting_id=record.get("meeting_id", meeting_id),
+        original_filename=record.get("original_filename", ""),
+        storage_path=record.get("storage_path"),
+        status=record.get("status", MeetingStatus.PENDING),
+        transcript=record.get("transcript"),
+        summary=record.get("summary"),
+        key_points=record.get("key_points") or [],
+        decisions=record.get("decisions") or [],
+        action_items=record.get("action_items") or [],
+        model_name=record.get("model_name"),
+        prompt_version=record.get("prompt_version"),
+        transcription_time=record.get("transcription_time"),
+        summarization_time=record.get("summarization_time"),
+        processing_time=record.get("processing_time"),
+        failure_stage=record.get("failure_stage"),
+        error_message=record.get("error_message"),
+        created_at=record.get("created_at"),
+        updated_at=record.get("updated_at"),
+    )
+
+
 @router.post("/{meeting_id}/transcribe", status_code=status.HTTP_200_OK)
 async def transcribe_meeting(meeting_id: str):
     """
-    Triggers Whisper transcription for a stored meeting audio.
-    Downloads stored audio, calls Groq Whisper (whisper-large-v3), normalizes and persists transcript,
-    and transitions meeting status to SUMMARIZING.
+    Direct endpoint to trigger Whisper transcription for stored meeting audio.
     """
     try:
         updated_record = process_transcription_for_meeting(meeting_id)
@@ -148,9 +242,7 @@ async def transcribe_meeting(meeting_id: str):
 @router.post("/{meeting_id}/summarize", response_model=MeetingSummarizeResponse, status_code=status.HTTP_200_OK)
 async def summarize_meeting(meeting_id: str):
     """
-    Triggers Gemini 2.5 Flash structured summarization for a meeting in SUMMARIZING state.
-    Validates transcript, generates structured output with Pydantic gate, persists intelligence,
-    and transitions meeting status to COMPLETED.
+    Direct endpoint to trigger Gemini structured summarization for a meeting in SUMMARIZING state.
     """
     try:
         updated_record = process_summarization_for_meeting(meeting_id)

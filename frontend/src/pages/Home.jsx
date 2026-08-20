@@ -79,7 +79,7 @@ export default function Home() {
           )}
           {apiHealth.status === 'offline' && (
             <span className="px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-400 border border-rose-500/20">
-              Offline (Port 8000)
+              Offline
             </span>
           )}
         </div>

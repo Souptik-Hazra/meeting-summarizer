@@ -15,8 +15,10 @@ def test_upload_meeting_success():
     fake_audio = io.BytesIO(b"RIFF" + b"\x00" * 200)
     fake_audio.name = "weekly_sync.mp3"
 
-    with patch("app.routes.meeting.upload_audio_file") as mock_upload, \
-         patch("app.routes.meeting.create_meeting_record") as mock_create_db:
+    with patch("uuid.uuid4", return_value="mock-id"), \
+         patch("app.routes.meeting.upload_audio_file") as mock_upload, \
+         patch("app.routes.meeting.create_meeting_record") as mock_create_db, \
+         patch("app.routes.meeting.process_meeting_pipeline") as mock_pipe:
         
         mock_upload.return_value = "meetings/mock-id/audio.mp3"
         mock_create_db.return_value = {
@@ -37,6 +39,8 @@ def test_upload_meeting_success():
         assert data["original_filename"] == "weekly_sync.mp3"
         mock_upload.assert_called_once()
         mock_create_db.assert_called_once()
+        # Verify background task was executed with the meeting_id
+        mock_pipe.assert_called_once_with("mock-id")
 
 
 def test_upload_meeting_invalid_format():
@@ -103,6 +107,92 @@ def test_upload_meeting_database_failure_with_cleanup():
         assert response.status_code == 500
         assert "database" in response.json()["detail"].lower()
         mock_delete.assert_called_once_with("meetings/temp-id/audio.flac")
+
+
+def test_get_meeting_status_success():
+    with patch("app.routes.meeting.get_meeting_record") as mock_get:
+        mock_get.return_value = {
+            "meeting_id": "status-id-1",
+            "status": "SUMMARIZING",
+            "failure_stage": None,
+            "error_message": None,
+        }
+
+        response = client.get("/api/meetings/status-id-1/status")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["meeting_id"] == "status-id-1"
+        assert data["status"] == "SUMMARIZING"
+        assert data["failure_stage"] is None
+
+
+def test_get_meeting_status_failed():
+    with patch("app.routes.meeting.get_meeting_record") as mock_get:
+        mock_get.return_value = {
+            "meeting_id": "fail-id-1",
+            "status": "FAILED",
+            "failure_stage": "transcription",
+            "error_message": "Speech recognition failed during transcription.",
+        }
+
+        response = client.get("/api/meetings/fail-id-1/status")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["meeting_id"] == "fail-id-1"
+        assert data["status"] == "FAILED"
+        assert data["failure_stage"] == "transcription"
+        assert "speech recognition failed" in data["error_message"].lower()
+
+
+def test_get_meeting_status_not_found():
+    with patch("app.routes.meeting.get_meeting_record") as mock_get:
+        mock_get.return_value = None
+
+        response = client.get("/api/meetings/missing-id/status")
+        assert response.status_code == 404
+        assert "not found" in response.json()["detail"].lower()
+
+
+def test_get_meeting_details_success():
+    with patch("app.routes.meeting.get_meeting_record") as mock_get:
+        mock_get.return_value = {
+            "meeting_id": "details-id-1",
+            "original_filename": "retro.mp3",
+            "storage_path": "meetings/details-id-1/audio.mp3",
+            "status": "COMPLETED",
+            "transcript": "Full team transcript.",
+            "summary": "Team retrospective summary.",
+            "key_points": ["Point A", "Point B"],
+            "decisions": ["Decision A"],
+            "action_items": [{"task": "Task A", "owner": "Alice", "deadline": "Monday"}],
+            "model_name": "gemini-flash-lite-latest",
+            "prompt_version": "v1",
+            "transcription_time": 2.1,
+            "summarization_time": 1.8,
+            "processing_time": 4.2,
+            "failure_stage": None,
+            "error_message": None,
+        }
+
+        response = client.get("/api/meetings/details-id-1")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["meeting_id"] == "details-id-1"
+        assert data["status"] == "COMPLETED"
+        assert data["summary"] == "Team retrospective summary."
+        assert len(data["key_points"]) == 2
+        assert len(data["decisions"]) == 1
+        assert len(data["action_items"]) == 1
+        assert data["processing_time"] == 4.2
+
+
+def test_get_meeting_details_not_found():
+    with patch("app.routes.meeting.get_meeting_record") as mock_get:
+        mock_get.return_value = None
+
+        response = client.get("/api/meetings/nonexistent-id")
+        assert response.status_code == 404
+        assert "not found" in response.json()["detail"].lower()
 
 
 def test_transcribe_meeting_success():
@@ -206,4 +296,3 @@ def test_summarize_meeting_service_failure():
         response = client.post("/api/meetings/err-id/summarize")
         assert response.status_code == 502
         assert "summarization service failed" in response.json()["detail"].lower()
-
