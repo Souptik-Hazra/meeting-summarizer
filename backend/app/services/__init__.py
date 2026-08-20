@@ -15,6 +15,14 @@ from app.services.storage import (
     read_and_validate_file_content,
     upload_audio_file,
     delete_audio_file,
+    download_audio_file,
+)
+from app.services.transcription import (
+    TranscriptionError,
+    get_groq_client,
+    normalize_transcript,
+    transcribe_audio,
+    process_transcription_for_meeting,
 )
 
 __all__ = [
@@ -32,4 +40,10 @@ __all__ = [
     "read_and_validate_file_content",
     "upload_audio_file",
     "delete_audio_file",
+    "download_audio_file",
+    "TranscriptionError",
+    "get_groq_client",
+    "normalize_transcript",
+    "transcribe_audio",
+    "process_transcription_for_meeting",
 ]

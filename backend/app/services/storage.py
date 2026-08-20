@@ -148,3 +148,26 @@ def delete_audio_file(
     except Exception as e:
         logger.warning(f"Failed to clean up storage file at {storage_path}: {str(e)}")
         return False
+
+
+def download_audio_file(
+    storage_path: str,
+    client: Optional[Client] = None
+) -> bytes:
+    """
+    Downloads the audio binary bytes from Supabase Storage for the given storage_path.
+    """
+    db = client or get_supabase_client()
+    bucket_name = settings.SUPABASE_STORAGE_BUCKET
+
+    try:
+        data = db.storage.from_(bucket_name).download(storage_path)
+        if not data:
+            raise StorageError(f"Downloaded audio object is empty at {storage_path}")
+        return data
+    except StorageError:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to download audio file from {storage_path}: {str(e)}")
+        raise StorageError("Failed to retrieve audio file from cloud storage.", original_error=e)
+

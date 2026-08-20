@@ -1,11 +1,11 @@
 # AI Meeting Intelligence & Summarization Platform
 
-An interview-ready, production-grade AI platform converting raw meeting audio into structured, reliable meeting intelligence:
+A production-grade GenAI platform converting recorded meeting audio into structured, reliable meeting intelligence:
 - Meeting transcript
 - Concise meeting summary
 - Key discussion points
 - Explicit decisions
-- Action items (with assignees and deadlines only when explicitly supported by the transcript)
+- Action items (with assignees and deadlines strictly supported by transcript context)
 
 ---
 
@@ -62,8 +62,7 @@ meeting-summarizer/
 ├── test-audio/        # Test audio recordings documentation
 ├── docs/              # Architecture and evaluation documentation
 ├── .gitignore
-├── README.md
-└── AGENTS.md          # Complete project specification
+└── README.md
 ```
 
 ---

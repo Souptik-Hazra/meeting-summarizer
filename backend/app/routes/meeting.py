@@ -12,6 +12,7 @@ from app.services.storage import (
     delete_audio_file,
 )
 from app.services.database import create_meeting_record, DatabaseError
+from app.services.transcription import process_transcription_for_meeting, TranscriptionError
 
 logger = logging.getLogger(__name__)
 
@@ -105,3 +106,38 @@ async def upload_meeting(file: UploadFile = File(...)):
         "original_filename": created_record.get("original_filename", safe_original_name),
         "status": created_record.get("status", MeetingStatus.PENDING.value),
     }
+
+
+@router.post("/{meeting_id}/transcribe", status_code=status.HTTP_200_OK)
+async def transcribe_meeting(meeting_id: str):
+    """
+    Triggers Whisper transcription for a stored meeting audio.
+    Downloads stored audio, calls Groq Whisper (whisper-large-v3), normalizes and persists transcript,
+    and transitions meeting status to SUMMARIZING.
+    """
+    try:
+        updated_record = process_transcription_for_meeting(meeting_id)
+        return {
+            "meeting_id": updated_record.get("meeting_id", meeting_id),
+            "status": updated_record.get("status", MeetingStatus.SUMMARIZING.value),
+            "transcript": updated_record.get("transcript", ""),
+            "transcription_time": updated_record.get("transcription_time"),
+        }
+    except TranscriptionError as e:
+        err_msg = str(e)
+        if "not found" in err_msg.lower():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Meeting with ID '{meeting_id}' not found."
+            )
+        logger.error(f"Transcription failed for meeting {meeting_id}: {err_msg}")
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Transcription service failed to process meeting audio."
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error transcribing meeting {meeting_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred during transcription."
+        )

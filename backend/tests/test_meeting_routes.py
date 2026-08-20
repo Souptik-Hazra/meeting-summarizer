@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.services.storage import StorageError
 from app.services.database import DatabaseError
+from app.services.transcription import TranscriptionError
 
 client = TestClient(app)
 
@@ -101,3 +102,39 @@ def test_upload_meeting_database_failure_with_cleanup():
         assert response.status_code == 500
         assert "database" in response.json()["detail"].lower()
         mock_delete.assert_called_once_with("meetings/temp-id/audio.flac")
+
+
+def test_transcribe_meeting_success():
+    with patch("app.routes.meeting.process_transcription_for_meeting") as mock_process:
+        mock_process.return_value = {
+            "meeting_id": "test-meet-123",
+            "status": "SUMMARIZING",
+            "transcript": "Meeting discussion notes transcript.",
+            "transcription_time": 4.12
+        }
+
+        response = client.post("/api/meetings/test-meet-123/transcribe")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["meeting_id"] == "test-meet-123"
+        assert data["status"] == "SUMMARIZING"
+        assert data["transcript"] == "Meeting discussion notes transcript."
+        assert data["transcription_time"] == 4.12
+
+
+def test_transcribe_meeting_not_found():
+    with patch("app.routes.meeting.process_transcription_for_meeting") as mock_process:
+        mock_process.side_effect = TranscriptionError("Meeting with ID 'missing-id' not found.")
+
+        response = client.post("/api/meetings/missing-id/transcribe")
+        assert response.status_code == 404
+        assert "not found" in response.json()["detail"].lower()
+
+
+def test_transcribe_meeting_service_failure():
+    with patch("app.routes.meeting.process_transcription_for_meeting") as mock_process:
+        mock_process.side_effect = TranscriptionError("Speech recognition failed during transcription.")
+
+        response = client.post("/api/meetings/err-id/transcribe")
+        assert response.status_code == 502
+        assert "transcription service failed" in response.json()["detail"].lower()
