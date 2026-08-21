@@ -1,12 +1,9 @@
-import React from 'react';
 import { 
   CheckSquare, 
   User, 
-  Calendar, 
   Award, 
   CheckCircle2, 
-  Clock, 
-  HelpCircle 
+  Clock 
 } from 'lucide-react';
 
 export default function ActionItems({ decisions = [], actionItems = [] }) {

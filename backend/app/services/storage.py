@@ -119,7 +119,7 @@ def upload_audio_file(
     safe_content_type = content_type if (content_type and content_type.startswith("audio/")) else "audio/mpeg"
 
     try:
-        response = db.storage.from_(bucket_name).upload(
+        db.storage.from_(bucket_name).upload(
             path=storage_path,
             file=file_content,
             file_options={"content-type": safe_content_type, "upsert": "false"}

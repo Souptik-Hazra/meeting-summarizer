@@ -1,14 +1,11 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   ArrowLeft, 
   Copy, 
   Check, 
   Clock, 
   Cpu, 
-  Layers, 
   Sparkles, 
-  FileText, 
-  CheckSquare, 
   Activity, 
   Download,
   Share2,

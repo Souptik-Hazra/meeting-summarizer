@@ -22,7 +22,6 @@ from app.services.transcription import (
 from app.services.summarization import (
     get_gemini_client,
     generate_meeting_summary,
-    SummarizationError,
 )
 
 logger = logging.getLogger(__name__)

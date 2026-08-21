@@ -103,7 +103,6 @@ export default function ProcessingStatus({
               const StepIcon = step.icon;
               const isPast = idx < currentIndex;
               const isCurrent = idx === currentIndex;
-              const isFuture = idx > currentIndex;
 
               return (
                 <div 

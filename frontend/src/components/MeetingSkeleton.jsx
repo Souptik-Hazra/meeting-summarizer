@@ -1,6 +1,3 @@
-import React from 'react';
-import { Sparkles, Layers, Award, FileText } from 'lucide-react';
-
 export default function MeetingSkeleton() {
   return (
     <div className="space-y-6 max-w-6xl mx-auto animate-pulse">

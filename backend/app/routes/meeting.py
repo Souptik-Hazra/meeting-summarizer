@@ -19,7 +19,7 @@ from app.services.database import (
 )
 from app.services.transcription import process_transcription_for_meeting, TranscriptionError
 from app.services.summarization import process_summarization_for_meeting, SummarizationError
-from app.services.pipeline import process_meeting_pipeline, PipelineError
+from app.services.pipeline import process_meeting_pipeline
 
 logger = logging.getLogger(__name__)
 

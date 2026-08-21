@@ -14,7 +14,7 @@ from app.services.database import (
     update_meeting_record,
     DatabaseError,
 )
-from app.services.storage import download_audio_file, StorageError
+from app.services.storage import download_audio_file
 
 logger = logging.getLogger(__name__)
 

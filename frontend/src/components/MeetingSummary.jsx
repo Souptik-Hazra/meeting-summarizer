@@ -1,5 +1,4 @@
-import React from 'react';
-import { FileText, Sparkles, Layers, ListChecks } from 'lucide-react';
+import { Sparkles, Layers } from 'lucide-react';
 
 export default function MeetingSummary({ summary, keyPoints = [] }) {
   return (

@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Optional, List, Any, Dict
 from datetime import datetime
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict
 
 
 class MeetingStatus(str, Enum):
