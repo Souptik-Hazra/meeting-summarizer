@@ -10,9 +10,16 @@ app = FastAPI(
 )
 
 # Configure CORS
-origins = [settings.FRONTEND_URL]
-if settings.FRONTEND_URL != "http://localhost:5173":
-    origins.append("http://localhost:5173")
+origins = []
+if settings.FRONTEND_URL:
+    for u in settings.FRONTEND_URL.split(","):
+        cleaned = u.strip().rstrip("/")
+        if cleaned and cleaned not in origins:
+            origins.append(cleaned)
+
+for default_origin in ["http://localhost:5173", "https://meeting-summarizer-app.netlify.app"]:
+    if default_origin not in origins:
+        origins.append(default_origin)
 
 app.add_middleware(
     CORSMiddleware,
