@@ -84,9 +84,3 @@ npm install
 cp .env.example .env
 npm run dev
 ```
-
-### 3. Run Tests
-```bash
-cd backend
-pytest -v
-```

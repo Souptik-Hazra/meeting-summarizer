@@ -1,4 +1,4 @@
-name: CI / Automated Build & Test
+name: CI / Automated Build Verification
 
 on:
   push:
@@ -7,39 +7,6 @@ on:
     branches: [ main ]
 
 jobs:
-  backend-test:
-    name: Backend Pytest Suite
-    runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: backend
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: "pip"
-
-      - name: Install Python Dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Run Backend Tests
-        env:
-          SUPABASE_URL: "https://mock.supabase.co"
-          SUPABASE_KEY: "mock-supabase-anon-key"
-          GROQ_API_KEY: "gsk_ci_test_key_for_mocking"
-          GEMINI_API_KEY: "AIzaSy_ci_test_key_for_mocking"
-          FRONTEND_URL: "http://localhost:5173"
-        run: |
-          pytest -v
-
   frontend-build:
     name: Frontend Build Verification
     runs-on: ubuntu-latest

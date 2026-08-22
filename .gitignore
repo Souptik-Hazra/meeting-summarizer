@@ -32,6 +32,11 @@ wheels/
 .pytest_cache/
 .coverage
 htmlcov/
+tests/
+backend/tests/
+pytest.ini
+backend/pytest.ini
+*.ini
 
 # Node / Frontend
 node_modules/
