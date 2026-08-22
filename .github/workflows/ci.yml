@@ -31,6 +31,12 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Backend Tests
+        env:
+          SUPABASE_URL: "https://mock.supabase.co"
+          SUPABASE_KEY: "mock-supabase-anon-key"
+          GROQ_API_KEY: "gsk_ci_test_key_for_mocking"
+          GEMINI_API_KEY: "AIzaSy_ci_test_key_for_mocking"
+          FRONTEND_URL: "http://localhost:5173"
         run: |
           pytest -v
 
@@ -57,4 +63,6 @@ jobs:
         run: npm install
 
       - name: Build Frontend Application
+        env:
+          VITE_API_URL: "https://meeting-summarizer-40l8.onrender.com"
         run: npm run build
