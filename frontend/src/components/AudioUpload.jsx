@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { UploadCloud, FileAudio, AlertCircle, CheckCircle2, Trash2, ArrowRight, Loader2, Database } from 'lucide-react';
+import { formatFileSize } from '../utils/formatters';
 
 const ALLOWED_EXTENSIONS = ['.mp3', '.wav', '.m4a', '.aac', '.flac', '.ogg'];
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024; // 25 MB limit
@@ -91,13 +92,6 @@ export default function AudioUpload({
     if (selectedFile && onUpload && !isUploading) {
       onUpload(selectedFile);
     }
-  };
-
-  const formatFileSize = (bytes) => {
-    if (bytes < 1024 * 1024) {
-      return `${(bytes / 1024).toFixed(1)} KB`;
-    }
-    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
   };
 
   return (

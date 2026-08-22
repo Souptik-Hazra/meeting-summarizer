@@ -7,11 +7,10 @@ import {
   Cpu, 
   Sparkles, 
   Activity, 
-  Download,
-  Share2,
-  SearchX,
-  Zap,
-  AlertCircle
+  Share2, 
+  SearchX, 
+  Zap, 
+  AlertCircle 
 } from 'lucide-react';
 import { getMeetingStatus, getMeetingResult } from '../services/api';
 import ProcessingStatus from '../components/ProcessingStatus';
@@ -19,6 +18,12 @@ import MeetingSummary from '../components/MeetingSummary';
 import ActionItems from '../components/ActionItems';
 import Transcript from '../components/Transcript';
 import MeetingSkeleton from '../components/MeetingSkeleton';
+
+const NAVIGATION_TABS = [
+  { id: 'overview', label: 'Summary & Points', activeStyle: 'bg-sky-500/20 text-sky-300 border-sky-500/30 shadow-sm' },
+  { id: 'actions', label: 'Decisions & Actions', activeStyle: 'bg-purple-500/20 text-purple-300 border-purple-500/30 shadow-sm' },
+  { id: 'transcript', label: 'Transcript', activeStyle: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30 shadow-sm' },
+];
 
 export default function Meeting({ meetingId, onBackToUpload }) {
   const [status, setStatus] = useState('PENDING');
@@ -66,23 +71,19 @@ export default function Meeting({ meetingId, onBackToUpload }) {
 
         if (currentStatus === 'COMPLETED') {
           fetchFinalResult();
-        } else if (currentStatus === 'FAILED') {
-          // Terminal failure state reached
-        } else {
-          // Keep polling every 1.5s
+        } else if (currentStatus !== 'FAILED') {
           pollTimerRef.current = setTimeout(pollStatus, 1500);
         }
       } catch (err) {
         if (!isMounted) return;
-        const errStr = String(err.message || '');
+        const errStr = String(err?.message || '');
         if (errStr.includes('404') || errStr.toLowerCase().includes('not found')) {
           setIsNotFound(true);
           return;
         }
 
         console.warn('Temporary network/server response during polling, retrying...', err);
-        setNetworkRetryCount(prev => prev + 1);
-        // Backoff retry: 2s -> 3s
+        setNetworkRetryCount((prev) => prev + 1);
         pollTimerRef.current = setTimeout(pollStatus, 2500);
       }
     };
@@ -119,67 +120,6 @@ export default function Meeting({ meetingId, onBackToUpload }) {
     }
   };
 
-  const handleExportMarkdown = () => {
-    if (!meetingData) return;
-
-    const filename = meetingData.original_filename || 'meeting';
-    const cleanName = filename.replace(/\.[^/.]+$/, '');
-    
-    let md = `# Meeting Intelligence: ${filename}\n\n`;
-    md += `**Meeting ID:** \`${meetingData.meeting_id}\`  \n`;
-    md += `**Date Created:** ${meetingData.created_at ? new Date(meetingData.created_at).toLocaleString() : 'N/A'}  \n`;
-    md += `**Total Processing Time:** ${meetingData.processing_time || 'N/A'}s  \n`;
-    md += `**Model:** \`${meetingData.model_name || 'gemini-flash-lite-latest'}\` (Prompt: \`${meetingData.prompt_version || 'v1'}\`)  \n\n`;
-    md += `---\n\n`;
-
-    md += `## 1. Executive Summary\n\n${meetingData.summary || 'No summary available.'}\n\n`;
-
-    md += `## 2. Key Discussion Points\n\n`;
-    if (meetingData.key_points && meetingData.key_points.length > 0) {
-      meetingData.key_points.forEach((point, idx) => {
-        md += `${idx + 1}. ${point}\n`;
-      });
-    } else {
-      md += `*No specific discussion points recorded.*\n`;
-    }
-    md += `\n`;
-
-    md += `## 3. Explicit Decisions\n\n`;
-    if (meetingData.decisions && meetingData.decisions.length > 0) {
-      meetingData.decisions.forEach((dec) => {
-        md += `- [x] **Decision:** ${dec}\n`;
-      });
-    } else {
-      md += `*No explicit decisions recorded.*\n`;
-    }
-    md += `\n`;
-
-    md += `## 4. Verified Action Items\n\n`;
-    if (meetingData.action_items && meetingData.action_items.length > 0) {
-      meetingData.action_items.forEach((item, idx) => {
-        const owner = item.owner ? `@${item.owner}` : '_Unassigned_';
-        const deadline = item.deadline ? `(Due: ${item.deadline})` : '_No deadline_';
-        md += `${idx + 1}. **${item.task}** — Owner: ${owner} | Deadline: ${deadline}\n`;
-      });
-    } else {
-      md += `*No action items assigned.*\n`;
-    }
-    md += `\n`;
-
-    md += `## 5. Full Meeting Transcript\n\n`;
-    md += `\`\`\`text\n${meetingData.transcript || 'No transcript available.'}\n\`\`\`\n`;
-
-    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${cleanName}-intelligence.md`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
   // 404 State Card
   if (isNotFound) {
     return (
@@ -205,6 +145,14 @@ export default function Meeting({ meetingId, onBackToUpload }) {
   }
 
   const isCompleted = status === 'COMPLETED' && meetingData !== null;
+
+  const telemetryItems = meetingData ? [
+    { label: 'Total Pipeline', value: meetingData.processing_time ? `${meetingData.processing_time}s` : '—', icon: Clock, iconColor: 'text-sky-400' },
+    { label: 'Whisper ASR', value: meetingData.transcription_time ? `${meetingData.transcription_time}s` : '—', icon: Zap, iconColor: 'text-indigo-400' },
+    { label: 'Gemini LLM', value: meetingData.summarization_time ? `${meetingData.summarization_time}s` : '—', icon: Sparkles, iconColor: 'text-emerald-400' },
+    { label: 'Model Engine', value: meetingData.model_name || 'gemini-flash-lite-latest', icon: Cpu, iconColor: 'text-purple-400', isTruncate: true },
+    { label: 'Prompt Version', value: (meetingData.prompt_version || 'v1').toUpperCase(), icon: Activity, iconColor: 'text-amber-400', colSpan: 'col-span-2 sm:col-span-1' },
+  ] : [];
 
   return (
     <div className="space-y-8 animate-fadeIn max-w-6xl mx-auto">
@@ -248,7 +196,6 @@ export default function Meeting({ meetingId, onBackToUpload }) {
 
         {/* Action Controls */}
         <div className="flex flex-wrap items-center gap-2.5">
-          {/* Share Link Button */}
           <button
             onClick={handleCopyShareLink}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition-all cursor-pointer"
@@ -267,19 +214,6 @@ export default function Meeting({ meetingId, onBackToUpload }) {
             )}
           </button>
 
-          {/* Export Markdown Button */}
-          {isCompleted && (
-            <button
-              onClick={handleExportMarkdown}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition-all cursor-pointer"
-              title="Download intelligence summary as Markdown"
-            >
-              <Download className="w-3.5 h-3.5 text-sky-400" />
-              <span>Export .md</span>
-            </button>
-          )}
-
-          {/* Upload New Recording */}
           <button
             onClick={onBackToUpload}
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-500/30 text-xs font-semibold transition-all cursor-pointer"
@@ -313,89 +247,38 @@ export default function Meeting({ meetingId, onBackToUpload }) {
         <div className="space-y-6">
           {/* Telemetry & Observability Bar */}
           <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1">
-              <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono">
-                <Clock className="w-3.5 h-3.5 text-sky-400" />
-                <span>Total Pipeline</span>
-              </div>
-              <p className="text-base font-bold text-slate-100 font-mono">
-                {meetingData?.processing_time ? `${meetingData.processing_time}s` : '—'}
-              </p>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1">
-              <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono">
-                <Zap className="w-3.5 h-3.5 text-indigo-400" />
-                <span>Whisper ASR</span>
-              </div>
-              <p className="text-base font-bold text-slate-100 font-mono">
-                {meetingData?.transcription_time ? `${meetingData.transcription_time}s` : '—'}
-              </p>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1">
-              <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono">
-                <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Gemini LLM</span>
-              </div>
-              <p className="text-base font-bold text-slate-100 font-mono">
-                {meetingData?.summarization_time ? `${meetingData.summarization_time}s` : '—'}
-              </p>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1">
-              <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono">
-                <Cpu className="w-3.5 h-3.5 text-purple-400" />
-                <span>Model Engine</span>
-              </div>
-              <p className="text-xs font-semibold text-slate-200 font-mono truncate" title={meetingData?.model_name}>
-                {meetingData?.model_name || 'gemini-flash-lite-latest'}
-              </p>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1 col-span-2 sm:col-span-1">
-              <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono">
-                <Activity className="w-3.5 h-3.5 text-amber-400" />
-                <span>Prompt Version</span>
-              </div>
-              <p className="text-base font-bold text-slate-100 font-mono uppercase">
-                {meetingData?.prompt_version || 'v1'}
-              </p>
-            </div>
+            {telemetryItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <div 
+                  key={item.label} 
+                  className={`p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1 ${item.colSpan || ''}`}
+                >
+                  <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono">
+                    <Icon className={`w-3.5 h-3.5 ${item.iconColor}`} />
+                    <span>{item.label}</span>
+                  </div>
+                  <p className={`font-bold text-slate-100 font-mono ${item.isTruncate ? 'text-xs font-semibold truncate' : 'text-base'}`}>
+                    {item.value}
+                  </p>
+                </div>
+              );
+            })}
           </section>
 
           {/* Navigation Tabs */}
           <div className="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900/80 border border-slate-800 max-w-md">
-            <button
-              onClick={() => setActiveTab('overview')}
-              className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                activeTab === 'overview'
-                  ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Summary & Points
-            </button>
-            <button
-              onClick={() => setActiveTab('actions')}
-              className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                activeTab === 'actions'
-                  ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Decisions & Actions
-            </button>
-            <button
-              onClick={() => setActiveTab('transcript')}
-              className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                activeTab === 'transcript'
-                  ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Transcript
-            </button>
+            {NAVIGATION_TABS.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setActiveTab(t.id)}
+                className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  activeTab === t.id ? t.activeStyle : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
           </div>
 
           {/* Tab Content Display */}

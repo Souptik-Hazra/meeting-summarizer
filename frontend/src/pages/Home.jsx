@@ -14,6 +14,33 @@ import AudioUpload from '../components/AudioUpload';
 import AudioRecorder from '../components/AudioRecorder';
 import { checkHealth, uploadMeetingAudio } from '../services/api';
 
+const PIPELINE_FEATURES = [
+  {
+    icon: Mic,
+    title: 'Groq Whisper ASR',
+    desc: 'High-speed, accurate speech-to-text transcription powered by whisper-large-v3.',
+    colorStyle: 'bg-sky-500/10 border-sky-500/20 text-sky-400',
+  },
+  {
+    icon: FileText,
+    title: 'Gemini Flash',
+    desc: 'Structured analysis extracting discussion topics, core takeaways, and takeaways.',
+    colorStyle: 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400',
+  },
+  {
+    icon: CheckSquare,
+    title: 'Decisions & Actions',
+    desc: 'Explicit decisions and verified action items with strict owner/deadline support.',
+    colorStyle: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
+  },
+  {
+    icon: ShieldCheck,
+    title: 'Pydantic Validation',
+    desc: 'Schema-enforced JSON guarantees deterministic, production-safe meeting outputs.',
+    colorStyle: 'bg-purple-500/10 border-purple-500/20 text-purple-400',
+  },
+];
+
 export default function Home({ onNavigateToMeeting }) {
   const [inputMode, setInputMode] = useState('upload'); // 'upload' | 'record'
   const [apiHealth, setApiHealth] = useState({ status: 'checking', service: '' });
@@ -44,8 +71,7 @@ export default function Home({ onNavigateToMeeting }) {
     try {
       const response = await uploadMeetingAudio(file);
       setUploadSuccess(response);
-      // Automatically transition to the meeting dashboard
-      if (response && response.meeting_id && onNavigateToMeeting) {
+      if (response?.meeting_id && onNavigateToMeeting) {
         setTimeout(() => {
           onNavigateToMeeting(response.meeting_id);
         }, 600);
@@ -195,45 +221,18 @@ export default function Home({ onNavigateToMeeting }) {
 
       {/* Pipeline Architecture Cards */}
       <section className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-6 max-w-5xl mx-auto">
-        <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-2.5">
-          <div className="w-9 h-9 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
-            <Mic className="w-5 h-5" />
-          </div>
-          <h3 className="font-semibold text-slate-200 text-sm">Groq Whisper ASR</h3>
-          <p className="text-xs text-slate-400 leading-relaxed">
-            High-speed, accurate speech-to-text transcription powered by whisper-large-v3.
-          </p>
-        </div>
-
-        <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-2.5">
-          <div className="w-9 h-9 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-            <FileText className="w-5 h-5" />
-          </div>
-          <h3 className="font-semibold text-slate-200 text-sm">Gemini Flash</h3>
-          <p className="text-xs text-slate-400 leading-relaxed">
-            Structured analysis extracting discussion topics, core takeaways, and takeaways.
-          </p>
-        </div>
-
-        <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-2.5">
-          <div className="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-            <CheckSquare className="w-5 h-5" />
-          </div>
-          <h3 className="font-semibold text-slate-200 text-sm">Decisions & Actions</h3>
-          <p className="text-xs text-slate-400 leading-relaxed">
-            Explicit decisions and verified action items with strict owner/deadline support.
-          </p>
-        </div>
-
-        <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-2.5">
-          <div className="w-9 h-9 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
-            <ShieldCheck className="w-5 h-5" />
-          </div>
-          <h3 className="font-semibold text-slate-200 text-sm">Pydantic Validation</h3>
-          <p className="text-xs text-slate-400 leading-relaxed">
-            Schema-enforced JSON guarantees deterministic, production-safe meeting outputs.
-          </p>
-        </div>
+        {PIPELINE_FEATURES.map((feat) => {
+          const Icon = feat.icon;
+          return (
+            <div key={feat.title} className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-2.5">
+              <div className={`w-9 h-9 rounded-lg border flex items-center justify-center ${feat.colorStyle}`}>
+                <Icon className="w-5 h-5" />
+              </div>
+              <h3 className="font-semibold text-slate-200 text-sm">{feat.title}</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">{feat.desc}</p>
+            </div>
+          );
+        })}
       </section>
     </div>
   );

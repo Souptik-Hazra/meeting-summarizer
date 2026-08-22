@@ -1,63 +1,33 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 /**
- * Helper to handle response parsing and errors
+ * Unified API request helper with error handling
  */
-async function handleResponse(response) {
+async function request(endpoint, options = {}) {
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
   if (!response.ok) {
-    let errorMessage = `HTTP Error ${response.status}: ${response.statusText}`;
+    let message = `HTTP Error ${response.status}: ${response.statusText}`;
     try {
-      const errorData = await response.json();
-      if (errorData?.detail) {
-        errorMessage = typeof errorData.detail === 'string' 
-          ? errorData.detail 
-          : JSON.stringify(errorData.detail);
+      const data = await response.json();
+      if (data?.detail) {
+        message = typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail);
       }
     } catch {
-      // Use fallback error message if JSON parsing fails
+      // Use HTTP status fallback
     }
-    throw new Error(errorMessage);
+    throw new Error(message);
   }
   return response.json();
 }
 
-/**
- * Check backend API health connectivity
- */
-export async function checkHealth() {
-  const response = await fetch(`${API_BASE_URL}/health`);
-  return handleResponse(response);
-}
+export const checkHealth = () => request('/health');
 
-/**
- * Upload meeting audio recording (Foundation method for Phase 4)
- * @param {File} audioFile 
- */
-export async function uploadMeetingAudio(audioFile) {
-  const formData = new FormData();
-  formData.append('file', audioFile);
+export const uploadMeetingAudio = (file) => {
+  const body = new FormData();
+  body.append('file', file);
+  return request('/api/meetings/upload', { method: 'POST', body });
+};
 
-  const response = await fetch(`${API_BASE_URL}/api/meetings/upload`, {
-    method: 'POST',
-    body: formData,
-  });
-  return handleResponse(response);
-}
+export const getMeetingStatus = (id) => request(`/api/meetings/${encodeURIComponent(id)}/status`);
 
-/**
- * Poll meeting processing status (Foundation method for Phase 7/8)
- * @param {string} meetingId 
- */
-export async function getMeetingStatus(meetingId) {
-  const response = await fetch(`${API_BASE_URL}/api/meetings/${encodeURIComponent(meetingId)}/status`);
-  return handleResponse(response);
-}
-
-/**
- * Fetch meeting intelligence results (Foundation method for Phase 8)
- * @param {string} meetingId 
- */
-export async function getMeetingResult(meetingId) {
-  const response = await fetch(`${API_BASE_URL}/api/meetings/${encodeURIComponent(meetingId)}`);
-  return handleResponse(response);
-}
+export const getMeetingResult = (id) => request(`/api/meetings/${encodeURIComponent(id)}`);

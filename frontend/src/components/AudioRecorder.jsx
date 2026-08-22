@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   Radio
 } from 'lucide-react';
+import { formatFileSize, formatTime } from '../utils/formatters';
 
 export default function AudioRecorder({ 
   onRecorded, 
@@ -140,18 +141,6 @@ export default function AudioRecorder({
     }
   };
 
-  const formatTime = (secs) => {
-    const m = Math.floor(secs / 60).toString().padStart(2, '0');
-    const s = (secs % 60).toString().padStart(2, '0');
-    return `${m}:${s}`;
-  };
-
-  const formatSize = (bytes) => {
-    if (!bytes) return '0 KB';
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-  };
-
   return (
     <div className="w-full max-w-2xl mx-auto p-6 md:p-8 rounded-2xl border border-slate-800 bg-slate-900/60 backdrop-blur-xl text-center space-y-6">
       {!isRecording && !audioBlob ? (
@@ -238,7 +227,7 @@ export default function AudioRecorder({
           <div className="space-y-1">
             <h3 className="text-sm font-semibold text-white">Recording Captured</h3>
             <p className="text-xs text-slate-400 font-mono">
-              Duration: {formatTime(recordingSeconds)} • Size: {formatSize(audioFile?.size)}
+              Duration: {formatTime(recordingSeconds)} • Size: {formatFileSize(audioFile?.size)}
             </p>
           </div>
 

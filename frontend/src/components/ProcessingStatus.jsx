@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Loader2, 
   CheckCircle2, 
@@ -7,8 +7,8 @@ import {
   Sparkles, 
   Database, 
   Check, 
-  ArrowLeft,
-  Clock
+  ArrowLeft, 
+  Clock 
 } from 'lucide-react';
 
 const PIPELINE_STEPS = [
@@ -38,13 +38,11 @@ const PIPELINE_STEPS = [
   },
 ];
 
-const STEP_ORDER = ['PENDING', 'TRANSCRIBING', 'SUMMARIZING', 'COMPLETED'];
-
 export default function ProcessingStatus({ 
   status, 
   failureStage, 
   errorMessage, 
-  meetingId,
+  meetingId, 
   onReset 
 }) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -53,13 +51,13 @@ export default function ProcessingStatus({
     if (status === 'COMPLETED' || status === 'FAILED') return;
 
     const timer = setInterval(() => {
-      setElapsedSeconds(prev => prev + 1);
+      setElapsedSeconds((prev) => prev + 1);
     }, 1000);
 
     return () => clearInterval(timer);
   }, [status]);
 
-  const currentIndex = STEP_ORDER.indexOf(status) !== -1 ? STEP_ORDER.indexOf(status) : 0;
+  const currentIndex = Math.max(0, PIPELINE_STEPS.findIndex((s) => s.id === status));
   const isFailed = status === 'FAILED';
 
   return (
@@ -104,24 +102,25 @@ export default function ProcessingStatus({
               const isPast = idx < currentIndex;
               const isCurrent = idx === currentIndex;
 
+              // Compute clean state styling
+              const cardClass = isCurrent
+                ? 'bg-sky-950/30 border-sky-500/30 shadow-lg shadow-sky-950/50'
+                : isPast
+                ? 'bg-slate-900/40 border-slate-800/60 opacity-90'
+                : 'bg-slate-950/20 border-slate-900/40 opacity-40';
+
+              const iconBoxClass = isPast
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                : isCurrent
+                ? 'bg-sky-500/20 border-sky-400 text-sky-300 shadow-md shadow-sky-500/20'
+                : 'bg-slate-800/40 border-slate-700/50 text-slate-500';
+
               return (
                 <div 
                   key={step.id} 
-                  className={`flex items-start gap-4 p-4 rounded-xl transition-all duration-300 border ${
-                    isCurrent 
-                      ? 'bg-sky-950/30 border-sky-500/30 shadow-lg shadow-sky-950/50' 
-                      : isPast 
-                      ? 'bg-slate-900/40 border-slate-800/60 opacity-90' 
-                      : 'bg-slate-950/20 border-slate-900/40 opacity-40'
-                  }`}
+                  className={`flex items-start gap-4 p-4 rounded-xl transition-all duration-300 border ${cardClass}`}
                 >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border transition-all ${
-                    isPast 
-                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
-                      : isCurrent 
-                      ? 'bg-sky-500/20 border-sky-400 text-sky-300 shadow-md shadow-sky-500/20' 
-                      : 'bg-slate-800/40 border-slate-700/50 text-slate-500'
-                  }`}>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border transition-all ${iconBoxClass}`}>
                     {isPast ? (
                       <Check className="w-5 h-5" />
                     ) : isCurrent ? (
@@ -167,7 +166,7 @@ export default function ProcessingStatus({
                   Processing Failed {failureStage ? `at ${failureStage} stage` : ''}
                 </h4>
                 <p className="text-xs text-rose-200/80 leading-relaxed">
-                  {errorMessage || "An unexpected error occurred while processing the meeting audio."}
+                  {errorMessage || 'An unexpected error occurred while processing the meeting audio.'}
                 </p>
               </div>
             </div>

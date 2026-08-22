@@ -6,6 +6,18 @@ import {
   Clock 
 } from 'lucide-react';
 
+function MetaBadge({ icon: Icon, value, fallback, activeClass, iconClass }) {
+  const hasValue = Boolean(value && value.trim() && value.toLowerCase() !== 'null');
+  return (
+    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border ${
+      hasValue ? activeClass : 'bg-slate-800/60 text-slate-400 border-slate-700/50'
+    }`}>
+      <Icon className={`w-3 h-3 ${hasValue ? iconClass : 'text-slate-400'}`} />
+      <span>{hasValue ? value : fallback}</span>
+    </div>
+  );
+}
+
 export default function ActionItems({ decisions = [], actionItems = [] }) {
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -26,7 +38,7 @@ export default function ActionItems({ decisions = [], actionItems = [] }) {
           </span>
         </div>
 
-        {decisions && decisions.length > 0 ? (
+        {decisions.length > 0 ? (
           <div className="grid grid-cols-1 gap-3 pt-1">
             {decisions.map((decision, index) => (
               <div 
@@ -66,51 +78,41 @@ export default function ActionItems({ decisions = [], actionItems = [] }) {
           </span>
         </div>
 
-        {actionItems && actionItems.length > 0 ? (
+        {actionItems.length > 0 ? (
           <div className="grid grid-cols-1 gap-3 pt-1">
-            {actionItems.map((item, index) => {
-              const hasOwner = item.owner && item.owner.trim().length > 0 && item.owner.toLowerCase() !== 'null';
-              const hasDeadline = item.deadline && item.deadline.trim().length > 0 && item.deadline.toLowerCase() !== 'null';
-
-              return (
-                <div 
-                  key={index}
-                  className="p-4 rounded-xl bg-slate-950/40 border border-slate-800/60 hover:border-slate-700/80 transition-all space-y-3"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-md bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 text-xs font-mono font-bold shrink-0 mt-0.5">
-                      {index + 1}
-                    </div>
-                    <p className="text-sm font-medium text-slate-200 leading-relaxed flex-1">
-                      {item.task}
-                    </p>
+            {actionItems.map((item, index) => (
+              <div 
+                key={index}
+                className="p-4 rounded-xl bg-slate-950/40 border border-slate-800/60 hover:border-slate-700/80 transition-all space-y-3"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-md bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 text-xs font-mono font-bold shrink-0 mt-0.5">
+                    {index + 1}
                   </div>
-
-                  {/* Metadata Badges (Owner & Deadline) */}
-                  <div className="flex flex-wrap items-center gap-2 pl-9">
-                    {/* Owner Badge */}
-                    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border ${
-                      hasOwner 
-                        ? 'bg-sky-500/10 text-sky-300 border-sky-500/20' 
-                        : 'bg-slate-800/60 text-slate-400 border-slate-700/50'
-                    }`}>
-                      <User className="w-3 h-3 text-sky-400" />
-                      <span>{hasOwner ? item.owner : 'Unassigned'}</span>
-                    </div>
-
-                    {/* Deadline Badge */}
-                    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border ${
-                      hasDeadline 
-                        ? 'bg-amber-500/10 text-amber-300 border-amber-500/20' 
-                        : 'bg-slate-800/60 text-slate-400 border-slate-700/50'
-                    }`}>
-                      <Clock className="w-3 h-3 text-amber-400" />
-                      <span>{hasDeadline ? item.deadline : 'No deadline'}</span>
-                    </div>
-                  </div>
+                  <p className="text-sm font-medium text-slate-200 leading-relaxed flex-1">
+                    {item.task}
+                  </p>
                 </div>
-              );
-            })}
+
+                {/* Metadata Badges (Owner & Deadline) */}
+                <div className="flex flex-wrap items-center gap-2 pl-9">
+                  <MetaBadge 
+                    icon={User} 
+                    value={item.owner} 
+                    fallback="Unassigned" 
+                    activeClass="bg-sky-500/10 text-sky-300 border-sky-500/20" 
+                    iconClass="text-sky-400" 
+                  />
+                  <MetaBadge 
+                    icon={Clock} 
+                    value={item.deadline} 
+                    fallback="No deadline" 
+                    activeClass="bg-amber-500/10 text-amber-300 border-amber-500/20" 
+                    iconClass="text-amber-400" 
+                  />
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="p-6 rounded-xl bg-slate-950/20 border border-dashed border-slate-800 text-center text-slate-500 text-xs italic">
