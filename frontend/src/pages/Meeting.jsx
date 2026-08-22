@@ -6,7 +6,6 @@ import {
   Clock, 
   Cpu, 
   Sparkles, 
-  Activity, 
   Share2, 
   SearchX, 
   Zap, 
@@ -151,7 +150,6 @@ export default function Meeting({ meetingId, onBackToUpload }) {
     { label: 'Whisper ASR', value: meetingData.transcription_time ? `${meetingData.transcription_time}s` : '—', icon: Zap, iconColor: 'text-indigo-400' },
     { label: 'Gemini LLM', value: meetingData.summarization_time ? `${meetingData.summarization_time}s` : '—', icon: Sparkles, iconColor: 'text-emerald-400' },
     { label: 'Model Engine', value: meetingData.model_name || 'gemini-flash-lite-latest', icon: Cpu, iconColor: 'text-purple-400', isTruncate: true },
-    { label: 'Prompt Version', value: (meetingData.prompt_version || 'v1').toUpperCase(), icon: Activity, iconColor: 'text-amber-400', colSpan: 'col-span-2 sm:col-span-1' },
   ] : [];
 
   return (
@@ -246,7 +244,7 @@ export default function Meeting({ meetingId, onBackToUpload }) {
         /* Completed Results Dashboard */
         <div className="space-y-6">
           {/* Telemetry & Observability Bar */}
-          <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {telemetryItems.map((item) => {
               const Icon = item.icon;
               return (

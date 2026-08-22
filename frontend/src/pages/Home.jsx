@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { 
-  Sparkles, 
   Mic, 
   UploadCloud, 
   FileText, 
@@ -98,19 +97,13 @@ export default function Home({ onNavigateToMeeting }) {
   return (
     <div className="space-y-12 py-6">
       {/* Hero Section */}
-      <div className="text-center space-y-4 max-w-3xl mx-auto">
-        <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-sky-950/60 border border-sky-500/30 text-sky-300 text-xs font-medium">
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>Groq Whisper & Gemini Flash Pipeline</span>
-        </div>
-
-        <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
-          AI Meeting Intelligence & Summarization
+      <div className="text-center space-y-3 max-w-2xl mx-auto">
+        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
+          AI Meeting Intelligence
         </h1>
 
-        <p className="text-base md:text-lg text-slate-400">
-          Transform raw meeting recordings into structured intelligence: comprehensive transcripts,
-          concise summaries, key points, explicit decisions, and verified action items.
+        <p className="text-sm md:text-base text-slate-400">
+          Convert meeting recordings into transcripts, summaries, decisions, and action items.
         </p>
 
         {/* Backend API Health Badge */}

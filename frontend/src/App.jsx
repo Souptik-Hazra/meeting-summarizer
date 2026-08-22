@@ -55,9 +55,6 @@ export default function App() {
               <span className="font-bold text-base tracking-tight text-white group-hover:text-sky-300 transition-colors">
                 Meeting Intelligence
               </span>
-              <span className="ml-2 text-xs font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
-                v1.0
-              </span>
             </div>
           </div>
 

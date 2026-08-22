@@ -2,6 +2,8 @@
 
 > **Live Application**: [https://meeting-summarizer-app.netlify.app](https://meeting-summarizer-app.netlify.app)
 
+![Application Preview](docs/app_screenshot.png)
+
 An end-to-end AI application that converts meeting audio into structured meeting intelligence using **Groq Whisper**, **Google Gemini**, **FastAPI**, and **React**.
 
 ---
@@ -21,7 +23,7 @@ An end-to-end AI application that converts meeting audio into structured meeting
 - **Speech-to-Text**: Fast transcription powered by Groq Whisper (`whisper-large-v3`).
 - **Structured Intelligence**: Google Gemini extracts executive summaries, key discussion points, explicit decisions, and verified action items.
 - **Pydantic Validation**: Strict schema enforcement to prevent hallucination.
-- **Interactive Dashboard**: Searchable transcript, action items checklist, Markdown export, and latency telemetry.
+- **Interactive Dashboard**: Searchable transcript, action items checklist, and live pipeline latency telemetry.
 
 ---
 
