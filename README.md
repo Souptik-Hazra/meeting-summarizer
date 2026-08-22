@@ -2,7 +2,7 @@
 
 > **Live Application**: [https://meeting-summarizer-app.netlify.app](https://meeting-summarizer-app.netlify.app)
 
-An end-to-end AI application that converts meeting audio into structured, reliable meeting intelligence using **Groq Whisper**, **Google Gemini Flash**, **FastAPI**, and **React**.
+An end-to-end AI application that converts meeting audio into structured meeting intelligence using **Groq Whisper**, **Google Gemini**, **FastAPI**, and **React**.
 
 ---
 
@@ -11,21 +11,17 @@ An end-to-end AI application that converts meeting audio into structured, reliab
 - **Frontend App**: [https://meeting-summarizer-app.netlify.app](https://meeting-summarizer-app.netlify.app)
 - **Demo Video**: [demo/demo-video.mp4](demo/demo-video.mp4)
 - **Backend API**: Hosted on Render
-- **Database & Object Storage**: Supabase (PostgreSQL & Storage)
+- **Database & Storage**: Supabase
 
 ---
 
 ## Features
 
-- **Audio File Upload & Live Microphone Recording**: Upload recordings (`.mp3`, `.wav`, `.m4a`, `.aac`, `.flac`, `.ogg`, `.webm`) or record directly from your microphone in the browser.
-- **Fast Speech-to-Text (ASR)**: Groq Whisper (`whisper-large-v3`) produces full transcripts with sub-3s latency.
-- **Structured Meeting Intelligence**: Google Gemini Flash extracts:
-  - **Executive Summary**: Concise meeting overview.
-  - **Key Discussion Points**: Core topics and context.
-  - **Explicit Decisions**: Confirmed choices without hallucination.
-  - **Verified Action Items**: Specific tasks with assignees and deadlines strictly grounded in transcript evidence.
-- **Pydantic Validation Gate**: Schema-enforced JSON guarantees 100% deterministic output before database persistence.
-- **Interactive Results Dashboard**: Searchable/copyable transcript, action items checklist, Markdown export, and live pipeline latency telemetry.
+- **Audio Upload & Live Recording**: Upload audio files or record directly via browser microphone.
+- **Speech-to-Text**: Fast transcription powered by Groq Whisper (`whisper-large-v3`).
+- **Structured Intelligence**: Google Gemini extracts executive summaries, key discussion points, explicit decisions, and verified action items.
+- **Pydantic Validation**: Strict schema enforcement to prevent hallucination.
+- **Interactive Dashboard**: Searchable transcript, action items checklist, Markdown export, and latency telemetry.
 
 ---
 
@@ -34,38 +30,27 @@ An end-to-end AI application that converts meeting audio into structured, reliab
 ![Architecture Diagram](docs/architecture_diagram.png)
 
 ```text
-Audio File / Live Mic
-        │
-        ▼
- FastAPI Backend
-        │
-   ┌────┴──────────────────────────┐
-   ▼                               ▼
-Supabase Storage (Audio)     Supabase DB (Record)
-   │
-   ▼
-Stage 1: Groq Whisper (whisper-large-v3) ──► Transcript
-                                                   │
-                                                   ▼
-Stage 2: Gemini Flash + Pydantic Gate ────► Structured Summary
-                                                   │
-                                                   ▼
-                                         Interactive React Dashboard
+Audio / Live Mic ──► FastAPI ──► Supabase Storage
+                         │
+                         ▼
+             Groq Whisper (ASR) ──► Transcript
+                                         │
+                                         ▼
+             Gemini (LLM) ───────► Structured Intelligence
+                                         │
+                                         ▼
+                                   React Dashboard
 ```
 
 ---
 
 ## Technology Stack
 
-| Layer | Technology |
-| :--- | :--- |
-| **Frontend** | React, Vite, Tailwind CSS, Lucide Icons |
-| **Backend** | Python 3.11, FastAPI, Pydantic v2 |
-| **Speech-to-Text** | Groq API (`whisper-large-v3`) |
-| **LLM Intelligence**| Google Gemini (`gemini-flash-lite-latest` / `gemini-2.5-flash`) |
-| **Database & Storage** | Supabase PostgreSQL & Supabase Storage |
-| **Testing** | pytest (79 unit and integration test cases) |
-| **Deployments** | Netlify (Frontend) + Render (Backend) |
+- **Frontend**: React, Vite, Tailwind CSS
+- **Backend**: Python, FastAPI, Pydantic
+- **Speech-to-Text**: Groq Whisper (`whisper-large-v3`)
+- **LLM**: Google Gemini
+- **Database & Storage**: Supabase (PostgreSQL & Storage)
 
 ---
 
@@ -73,10 +58,10 @@ Stage 2: Gemini Flash + Pydantic Gate ────► Structured Summary
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| `GET` | `/health` | Service health check |
-| `POST` | `/api/meetings/upload` | Upload audio and initialize meeting record |
-| `GET` | `/api/meetings/{id}/status` | Get real-time processing status (`PENDING` → `TRANSCRIBING` → `SUMMARIZING` → `COMPLETED`) |
-| `GET` | `/api/meetings/{id}` | Get complete meeting transcript, summary, decisions, and action items |
+| `GET` | `/health` | Health check |
+| `POST` | `/api/meetings/upload` | Upload audio and create meeting record |
+| `GET` | `/api/meetings/{id}/status` | Get real-time processing status |
+| `GET` | `/api/meetings/{id}` | Get complete transcript and summary |
 
 ---
 
@@ -86,17 +71,9 @@ Stage 2: Gemini Flash + Pydantic Gate ────► Structured Summary
 ```bash
 cd backend
 python -m venv .venv
-
-# Activate Virtual Environment:
-# Windows:
-.venv\Scripts\activate
-# macOS/Linux:
-source .venv/bin/activate
-
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 cp .env.example .env
-# Add SUPABASE_URL, SUPABASE_KEY, GROQ_API_KEY, and GEMINI_API_KEY in .env
-
 uvicorn app.main:app --reload --port 8000
 ```
 
@@ -105,14 +82,11 @@ uvicorn app.main:app --reload --port 8000
 cd frontend
 npm install
 cp .env.example .env
-# Set VITE_API_URL=http://localhost:8000 in frontend/.env
-
 npm run dev
 ```
 
-### 3. Run Automated Tests
+### 3. Run Tests
 ```bash
 cd backend
 pytest -v
 ```
-*(All 79 test cases passing)*
