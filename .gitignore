@@ -67,3 +67,7 @@ AGENTS_v2.md
 *.aac
 *.flac
 *.ogg
+
+# Allow demo video deliverables
+!demo/
+!demo/*

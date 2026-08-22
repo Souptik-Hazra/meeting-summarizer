@@ -6,15 +6,16 @@ An end-to-end AI application that converts meeting audio into structured, reliab
 
 ---
 
-## 🚀 Live Demo
+## Live Demo & Deliverables
 
 - **Frontend App**: [https://meeting-summarizer-app.netlify.app](https://meeting-summarizer-app.netlify.app)
+- **Demo Video**: [demo/demo-video.mp4](demo/demo-video.mp4)
 - **Backend API**: Hosted on Render
 - **Database & Object Storage**: Supabase (PostgreSQL & Storage)
 
 ---
 
-## ✨ Features
+## Features
 
 - **Audio File Upload & Live Microphone Recording**: Upload recordings (`.mp3`, `.wav`, `.m4a`, `.aac`, `.flac`, `.ogg`, `.webm`) or record directly from your microphone in the browser.
 - **Fast Speech-to-Text (ASR)**: Groq Whisper (`whisper-large-v3`) produces full transcripts with sub-3s latency.
@@ -28,7 +29,7 @@ An end-to-end AI application that converts meeting audio into structured, reliab
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ![Architecture Diagram](docs/architecture_diagram.png)
 
@@ -54,7 +55,7 @@ Stage 2: Gemini Flash + Pydantic Gate ────► Structured Summary
 
 ---
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 | Layer | Technology |
 | :--- | :--- |
@@ -68,7 +69,7 @@ Stage 2: Gemini Flash + Pydantic Gate ────► Structured Summary
 
 ---
 
-## 🔌 API Endpoints
+## API Endpoints
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
@@ -79,7 +80,7 @@ Stage 2: Gemini Flash + Pydantic Gate ────► Structured Summary
 
 ---
 
-## 💻 Local Setup
+## Local Setup
 
 ### 1. Backend Setup
 ```bash
