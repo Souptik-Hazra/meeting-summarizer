@@ -31,15 +31,11 @@ def test_generate_meeting_summary_success():
         summary="Weekly sprint planning completed.",
         key_points=["Goal is to release MVP", "QA starts Wednesday"],
         decisions=["Ship MVP on Friday"],
-        action_items=[
-            ActionItem(task="Write integration tests", owner="Bob", deadline="Thursday")
-        ],
+        action_items=[ActionItem(task="Write integration tests", owner="Bob", deadline="Thursday")]
     )
     mock_gemini.models.generate_content.return_value = mock_response
 
-    output, elapsed = generate_meeting_summary(
-        "Team discussed sprint goals.", client=mock_gemini
-    )
+    output, elapsed = generate_meeting_summary("Team discussed sprint goals.", client=mock_gemini)
     assert output.summary == "Weekly sprint planning completed."
     assert len(output.key_points) == 2
     assert len(output.decisions) == 1
@@ -95,16 +91,12 @@ def test_process_summarization_for_meeting_success():
 
     # Mock get_meeting_record
     mock_select = MagicMock()
-    mock_select.data = [
-        {
-            "meeting_id": meeting_id,
-            "status": "SUMMARIZING",
-            "transcript": "Speaker 1: We agreed to launch the beta next week.",
-        }
-    ]
-    mock_db.table.return_value.select.return_value.eq.return_value.execute.return_value = (
-        mock_select
-    )
+    mock_select.data = [{
+        "meeting_id": meeting_id,
+        "status": "SUMMARIZING",
+        "transcript": "Speaker 1: We agreed to launch the beta next week."
+    }]
+    mock_db.table.return_value.select.return_value.eq.return_value.execute.return_value = mock_select
 
     # Mock Gemini response
     mock_response = MagicMock()
@@ -112,35 +104,29 @@ def test_process_summarization_for_meeting_success():
         summary="Team agreed to launch the beta next week.",
         key_points=["Beta launch next week"],
         decisions=["Launch beta"],
-        action_items=[
-            ActionItem(task="Prepare beta build", owner="Alice", deadline="Monday")
-        ],
+        action_items=[ActionItem(task="Prepare beta build", owner="Alice", deadline="Monday")]
     )
     mock_gemini.models.generate_content.return_value = mock_response
 
     # Mock DB update response
     mock_update = MagicMock()
-    mock_update.data = [
-        {
-            "meeting_id": meeting_id,
-            "status": "COMPLETED",
-            "summary": "Team agreed to launch the beta next week.",
-            "key_points": ["Beta launch next week"],
-            "decisions": ["Launch beta"],
-            "action_items": [
-                {"task": "Prepare beta build", "owner": "Alice", "deadline": "Monday"}
-            ],
-            "model_name": settings.GEMINI_MODEL,
-            "prompt_version": "v1",
-            "summarization_time": 2.15,
-        }
-    ]
-    mock_db.table.return_value.update.return_value.eq.return_value.execute.return_value = (
-        mock_update
-    )
+    mock_update.data = [{
+        "meeting_id": meeting_id,
+        "status": "COMPLETED",
+        "summary": "Team agreed to launch the beta next week.",
+        "key_points": ["Beta launch next week"],
+        "decisions": ["Launch beta"],
+        "action_items": [{"task": "Prepare beta build", "owner": "Alice", "deadline": "Monday"}],
+        "model_name": settings.GEMINI_MODEL,
+        "prompt_version": "v1",
+        "summarization_time": 2.15
+    }]
+    mock_db.table.return_value.update.return_value.eq.return_value.execute.return_value = mock_update
 
     result = process_summarization_for_meeting(
-        meeting_id=meeting_id, gemini_client=mock_gemini, supabase_client=mock_db
+        meeting_id=meeting_id,
+        gemini_client=mock_gemini,
+        supabase_client=mock_db
     )
 
     assert result["meeting_id"] == meeting_id
@@ -152,54 +138,38 @@ def test_process_summarization_for_meeting_not_found():
     mock_db = MagicMock()
     mock_select = MagicMock()
     mock_select.data = []
-    mock_db.table.return_value.select.return_value.eq.return_value.execute.return_value = (
-        mock_select
-    )
+    mock_db.table.return_value.select.return_value.eq.return_value.execute.return_value = mock_select
 
     with pytest.raises(SummarizationError) as exc:
-        process_summarization_for_meeting(
-            meeting_id="nonexistent-id", supabase_client=mock_db
-        )
+        process_summarization_for_meeting(meeting_id="nonexistent-id", supabase_client=mock_db)
     assert "not found" in str(exc.value).lower()
 
 
 def test_process_summarization_for_meeting_invalid_state():
     mock_db = MagicMock()
     mock_select = MagicMock()
-    mock_select.data = [
-        {
-            "meeting_id": "meet-wrong-state",
-            "status": "PENDING",  # Must strictly be SUMMARIZING
-            "transcript": "Transcript exists.",
-        }
-    ]
-    mock_db.table.return_value.select.return_value.eq.return_value.execute.return_value = (
-        mock_select
-    )
+    mock_select.data = [{
+        "meeting_id": "meet-wrong-state",
+        "status": "PENDING",  # Must strictly be SUMMARIZING
+        "transcript": "Transcript exists."
+    }]
+    mock_db.table.return_value.select.return_value.eq.return_value.execute.return_value = mock_select
 
     with pytest.raises(SummarizationError) as exc:
-        process_summarization_for_meeting(
-            meeting_id="meet-wrong-state", supabase_client=mock_db
-        )
+        process_summarization_for_meeting(meeting_id="meet-wrong-state", supabase_client=mock_db)
     assert "requires status 'SUMMARIZING'" in str(exc.value)
 
 
 def test_process_summarization_for_meeting_missing_transcript():
     mock_db = MagicMock()
     mock_select = MagicMock()
-    mock_select.data = [
-        {
-            "meeting_id": "meet-no-transcript",
-            "status": "SUMMARIZING",
-            "transcript": "",  # Missing transcript
-        }
-    ]
-    mock_db.table.return_value.select.return_value.eq.return_value.execute.return_value = (
-        mock_select
-    )
+    mock_select.data = [{
+        "meeting_id": "meet-no-transcript",
+        "status": "SUMMARIZING",
+        "transcript": ""  # Missing transcript
+    }]
+    mock_db.table.return_value.select.return_value.eq.return_value.execute.return_value = mock_select
 
     with pytest.raises(SummarizationError) as exc:
-        process_summarization_for_meeting(
-            meeting_id="meet-no-transcript", supabase_client=mock_db
-        )
+        process_summarization_for_meeting(meeting_id="meet-no-transcript", supabase_client=mock_db)
     assert "no transcript available" in str(exc.value).lower()

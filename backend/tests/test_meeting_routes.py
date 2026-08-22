@@ -15,24 +15,21 @@ def test_upload_meeting_success():
     fake_audio = io.BytesIO(b"RIFF" + b"\x00" * 200)
     fake_audio.name = "weekly_sync.mp3"
 
-    with patch("uuid.uuid4", return_value="mock-id"), patch(
-        "app.routes.meeting.upload_audio_file"
-    ) as mock_upload, patch(
-        "app.routes.meeting.create_meeting_record"
-    ) as mock_create_db, patch(
-        "app.routes.meeting.process_meeting_pipeline"
-    ) as mock_pipe:
-
+    with patch("uuid.uuid4", return_value="mock-id"), \
+         patch("app.routes.meeting.upload_audio_file") as mock_upload, \
+         patch("app.routes.meeting.create_meeting_record") as mock_create_db, \
+         patch("app.routes.meeting.process_meeting_pipeline") as mock_pipe:
+        
         mock_upload.return_value = "meetings/mock-id/audio.mp3"
         mock_create_db.return_value = {
             "meeting_id": "mock-id",
             "original_filename": "weekly_sync.mp3",
-            "status": "PENDING",
+            "status": "PENDING"
         }
 
         response = client.post(
             "/api/meetings/upload",
-            files={"file": ("weekly_sync.mp3", fake_audio, "audio/mpeg")},
+            files={"file": ("weekly_sync.mp3", fake_audio, "audio/mpeg")}
         )
 
         assert response.status_code == 201
@@ -49,7 +46,8 @@ def test_upload_meeting_success():
 def test_upload_meeting_invalid_format():
     fake_file = io.BytesIO(b"fake text content")
     response = client.post(
-        "/api/meetings/upload", files={"file": ("notes.txt", fake_file, "text/plain")}
+        "/api/meetings/upload",
+        files={"file": ("notes.txt", fake_file, "text/plain")}
     )
     assert response.status_code == 400
     assert "Unsupported audio format" in response.json()["detail"]
@@ -58,7 +56,8 @@ def test_upload_meeting_invalid_format():
 def test_upload_meeting_empty_file():
     empty_file = io.BytesIO(b"")
     response = client.post(
-        "/api/meetings/upload", files={"file": ("silent.mp3", empty_file, "audio/mpeg")}
+        "/api/meetings/upload",
+        files={"file": ("silent.mp3", empty_file, "audio/mpeg")}
     )
     assert response.status_code == 400
     assert "Uploaded file is empty" in response.json()["detail"]
@@ -69,7 +68,7 @@ def test_upload_meeting_oversized_file():
         large_file = io.BytesIO(b"x" * 200)
         response = client.post(
             "/api/meetings/upload",
-            files={"file": ("large.wav", large_file, "audio/wav")},
+            files={"file": ("large.wav", large_file, "audio/wav")}
         )
         assert response.status_code == 413
         assert "exceeds maximum allowed size" in response.json()["detail"]
@@ -83,7 +82,7 @@ def test_upload_meeting_storage_failure():
 
         response = client.post(
             "/api/meetings/upload",
-            files={"file": ("standup.m4a", fake_audio, "audio/mp4")},
+            files={"file": ("standup.m4a", fake_audio, "audio/mp4")}
         )
 
         assert response.status_code == 502
@@ -93,16 +92,16 @@ def test_upload_meeting_storage_failure():
 def test_upload_meeting_database_failure_with_cleanup():
     fake_audio = io.BytesIO(b"RIFF" + b"\x00" * 100)
 
-    with patch("app.routes.meeting.upload_audio_file") as mock_upload, patch(
-        "app.routes.meeting.create_meeting_record"
-    ) as mock_create_db, patch("app.routes.meeting.delete_audio_file") as mock_delete:
-
+    with patch("app.routes.meeting.upload_audio_file") as mock_upload, \
+         patch("app.routes.meeting.create_meeting_record") as mock_create_db, \
+         patch("app.routes.meeting.delete_audio_file") as mock_delete:
+        
         mock_upload.return_value = "meetings/temp-id/audio.flac"
         mock_create_db.side_effect = DatabaseError("Database write error")
 
         response = client.post(
             "/api/meetings/upload",
-            files={"file": ("interview.flac", fake_audio, "audio/flac")},
+            files={"file": ("interview.flac", fake_audio, "audio/flac")}
         )
 
         assert response.status_code == 500
@@ -165,9 +164,7 @@ def test_get_meeting_details_success():
             "summary": "Team retrospective summary.",
             "key_points": ["Point A", "Point B"],
             "decisions": ["Decision A"],
-            "action_items": [
-                {"task": "Task A", "owner": "Alice", "deadline": "Monday"}
-            ],
+            "action_items": [{"task": "Task A", "owner": "Alice", "deadline": "Monday"}],
             "model_name": "gemini-flash-lite-latest",
             "prompt_version": "v1",
             "transcription_time": 2.1,
@@ -204,7 +201,7 @@ def test_transcribe_meeting_success():
             "meeting_id": "test-meet-123",
             "status": "SUMMARIZING",
             "transcript": "Meeting discussion notes transcript.",
-            "transcription_time": 4.12,
+            "transcription_time": 4.12
         }
 
         response = client.post("/api/meetings/test-meet-123/transcribe")
@@ -218,9 +215,7 @@ def test_transcribe_meeting_success():
 
 def test_transcribe_meeting_not_found():
     with patch("app.routes.meeting.process_transcription_for_meeting") as mock_process:
-        mock_process.side_effect = TranscriptionError(
-            "Meeting with ID 'missing-id' not found."
-        )
+        mock_process.side_effect = TranscriptionError("Meeting with ID 'missing-id' not found.")
 
         response = client.post("/api/meetings/missing-id/transcribe")
         assert response.status_code == 404
@@ -229,9 +224,7 @@ def test_transcribe_meeting_not_found():
 
 def test_transcribe_meeting_service_failure():
     with patch("app.routes.meeting.process_transcription_for_meeting") as mock_process:
-        mock_process.side_effect = TranscriptionError(
-            "Speech recognition failed during transcription."
-        )
+        mock_process.side_effect = TranscriptionError("Speech recognition failed during transcription.")
 
         response = client.post("/api/meetings/err-id/transcribe")
         assert response.status_code == 502
@@ -246,12 +239,10 @@ def test_summarize_meeting_success():
             "summary": "Meeting summary text.",
             "key_points": ["Point 1", "Point 2"],
             "decisions": ["Decision 1"],
-            "action_items": [
-                {"task": "Task 1", "owner": "Alice", "deadline": "Friday"}
-            ],
+            "action_items": [{"task": "Task 1", "owner": "Alice", "deadline": "Friday"}],
             "summarization_time": 3.14,
             "model_name": settings.GEMINI_MODEL,
-            "prompt_version": "v1",
+            "prompt_version": "v1"
         }
 
         response = client.post("/api/meetings/test-sum-123/summarize")
@@ -269,11 +260,8 @@ def test_summarize_meeting_success():
 
 def test_summarize_meeting_not_found():
     from app.services.summarization import SummarizationError
-
     with patch("app.routes.meeting.process_summarization_for_meeting") as mock_process:
-        mock_process.side_effect = SummarizationError(
-            "Meeting with ID 'missing-id' not found."
-        )
+        mock_process.side_effect = SummarizationError("Meeting with ID 'missing-id' not found.")
 
         response = client.post("/api/meetings/missing-id/summarize")
         assert response.status_code == 404
@@ -282,11 +270,8 @@ def test_summarize_meeting_not_found():
 
 def test_summarize_meeting_invalid_state():
     from app.services.summarization import SummarizationError
-
     with patch("app.routes.meeting.process_summarization_for_meeting") as mock_process:
-        mock_process.side_effect = SummarizationError(
-            "Meeting 'm1' is in status 'PENDING'. Summarization requires status 'SUMMARIZING'."
-        )
+        mock_process.side_effect = SummarizationError("Meeting 'm1' is in status 'PENDING'. Summarization requires status 'SUMMARIZING'.")
 
         response = client.post("/api/meetings/m1/summarize")
         assert response.status_code == 400
@@ -295,11 +280,8 @@ def test_summarize_meeting_invalid_state():
 
 def test_summarize_meeting_missing_transcript():
     from app.services.summarization import SummarizationError
-
     with patch("app.routes.meeting.process_summarization_for_meeting") as mock_process:
-        mock_process.side_effect = SummarizationError(
-            "Meeting 'm2' has no transcript available for summarization."
-        )
+        mock_process.side_effect = SummarizationError("Meeting 'm2' has no transcript available for summarization.")
 
         response = client.post("/api/meetings/m2/summarize")
         assert response.status_code == 400
@@ -308,7 +290,6 @@ def test_summarize_meeting_missing_transcript():
 
 def test_summarize_meeting_service_failure():
     from app.services.summarization import SummarizationError
-
     with patch("app.routes.meeting.process_summarization_for_meeting") as mock_process:
         mock_process.side_effect = SummarizationError("Gemini API generation failed.")
 

@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 
 class StorageError(Exception):
     """Exception raised when an operation against Supabase Storage fails."""
-
     def __init__(self, message: str, original_error: Optional[Exception] = None):
         super().__init__(message)
         self.original_error = original_error
@@ -20,7 +19,6 @@ class StorageError(Exception):
 
 class FileValidationError(Exception):
     """Exception raised when uploaded audio fails format, size, or metadata validation."""
-
     pass
 
 
@@ -53,7 +51,7 @@ def sanitize_filename(filename: str) -> str:
     """
     base_name = os.path.basename(filename.strip())
     # Remove control characters and limit length
-    safe_name = re.sub(r"[^\w\s\.\-_]", "", base_name)[:200]
+    safe_name = re.sub(r'[^\w\s\.\-_]', '', base_name)[:200]
     return safe_name or "recording.mp3"
 
 
@@ -63,12 +61,13 @@ def generate_safe_storage_path(meeting_id: str, original_filename: str) -> str:
     Pattern: meetings/{meeting_id}/audio{extension}
     """
     ext = extract_safe_extension(original_filename)
-    clean_meeting_id = re.sub(r"[^a-zA-Z0-9\-_]", "", meeting_id)
+    clean_meeting_id = re.sub(r'[^a-zA-Z0-9\-_]', '', meeting_id)
     return f"meetings/{clean_meeting_id}/audio{ext}"
 
 
 async def read_and_validate_file_content(
-    file: UploadFile, max_bytes: Optional[int] = None
+    file: UploadFile, 
+    max_bytes: Optional[int] = None
 ) -> bytes:
     """
     Reads upload stream with bounded chunking to enforce file-size limits safely.
@@ -106,7 +105,7 @@ def upload_audio_file(
     file_content: bytes,
     original_filename: str,
     content_type: Optional[str] = None,
-    client: Optional[Client] = None,
+    client: Optional[Client] = None
 ) -> str:
     """
     Uploads audio binary bytes to the Supabase Storage bucket at a safe path.
@@ -117,29 +116,24 @@ def upload_audio_file(
     bucket_name = settings.SUPABASE_STORAGE_BUCKET
 
     # Supporting content-type fallback
-    safe_content_type = (
-        content_type
-        if (content_type and content_type.startswith("audio/"))
-        else "audio/mpeg"
-    )
+    safe_content_type = content_type if (content_type and content_type.startswith("audio/")) else "audio/mpeg"
 
     try:
         db.storage.from_(bucket_name).upload(
             path=storage_path,
             file=file_content,
-            file_options={"content-type": safe_content_type, "upsert": "false"},
+            file_options={"content-type": safe_content_type, "upsert": "false"}
         )
         return storage_path
     except Exception as e:
-        logger.error(
-            f"Failed to upload audio to Supabase Storage at {storage_path}: {str(e)}"
-        )
-        raise StorageError(
-            "Failed to store audio file in cloud storage.", original_error=e
-        )
+        logger.error(f"Failed to upload audio to Supabase Storage at {storage_path}: {str(e)}")
+        raise StorageError("Failed to store audio file in cloud storage.", original_error=e)
 
 
-def delete_audio_file(storage_path: str, client: Optional[Client] = None) -> bool:
+def delete_audio_file(
+    storage_path: str, 
+    client: Optional[Client] = None
+) -> bool:
     """
     Deletes an audio object from Supabase Storage (e.g. cleanup on database failure).
     Returns True if deletion succeeded, False otherwise.
@@ -156,7 +150,10 @@ def delete_audio_file(storage_path: str, client: Optional[Client] = None) -> boo
         return False
 
 
-def download_audio_file(storage_path: str, client: Optional[Client] = None) -> bytes:
+def download_audio_file(
+    storage_path: str,
+    client: Optional[Client] = None
+) -> bytes:
     """
     Downloads the audio binary bytes from Supabase Storage for the given storage_path.
     """
@@ -172,6 +169,5 @@ def download_audio_file(storage_path: str, client: Optional[Client] = None) -> b
         raise
     except Exception as e:
         logger.error(f"Failed to download audio file from {storage_path}: {str(e)}")
-        raise StorageError(
-            "Failed to retrieve audio file from cloud storage.", original_error=e
-        )
+        raise StorageError("Failed to retrieve audio file from cloud storage.", original_error=e)
+

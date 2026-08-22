@@ -24,7 +24,6 @@ _groq_client: Optional[Groq] = None
 
 class TranscriptionError(Exception):
     """Exception raised when speech-to-text transcription fails."""
-
     def __init__(self, message: str, original_error: Optional[Exception] = None):
         super().__init__(message)
         self.original_error = original_error
@@ -39,18 +38,14 @@ def get_groq_client() -> Groq:
         return _groq_client
 
     if not settings.GROQ_API_KEY:
-        raise TranscriptionError(
-            "Groq API key must be configured in environment variables."
-        )
+        raise TranscriptionError("Groq API key must be configured in environment variables.")
 
     try:
         _groq_client = Groq(api_key=settings.GROQ_API_KEY)
         return _groq_client
     except Exception as e:
         logger.error(f"Failed to initialize Groq client: {str(e)}")
-        raise TranscriptionError(
-            "Failed to initialize speech-to-text service client.", original_error=e
-        )
+        raise TranscriptionError("Failed to initialize speech-to-text service client.", original_error=e)
 
 
 def normalize_transcript(raw_text: str) -> str:
@@ -67,17 +62,19 @@ def normalize_transcript(raw_text: str) -> str:
     lines = raw_text.splitlines()
     cleaned_lines = []
     for line in lines:
-        cleaned = re.sub(r"[ \t]+", " ", line).strip()
+        cleaned = re.sub(r'[ \t]+', ' ', line).strip()
         cleaned_lines.append(cleaned)
 
     normalized = "\n".join(cleaned_lines)
     # Collapse 3 or more consecutive linebreaks into 2
-    normalized = re.sub(r"\n{3,}", "\n\n", normalized).strip()
+    normalized = re.sub(r'\n{3,}', '\n\n', normalized).strip()
     return normalized
 
 
 def transcribe_audio(
-    audio_bytes: bytes, filename: str = "audio.mp3", client: Optional[Groq] = None
+    audio_bytes: bytes,
+    filename: str = "audio.mp3",
+    client: Optional[Groq] = None
 ) -> Tuple[str, float]:
     """
     Calls Groq Whisper (whisper-large-v3) to transcribe the given audio bytes.
@@ -95,13 +92,11 @@ def transcribe_audio(
         response = groq.audio.transcriptions.create(
             file=(filename, audio_bytes),
             model=model_name,
-            response_format="verbose_json",
+            response_format="verbose_json"
         )
     except Exception as e:
         logger.error(f"Groq Whisper transcription API failed: {str(e)}")
-        raise TranscriptionError(
-            "Speech-to-text transcription service failed.", original_error=e
-        )
+        raise TranscriptionError("Speech-to-text transcription service failed.", original_error=e)
 
     elapsed_time = round(time.perf_counter() - start_time, 2)
 
@@ -121,7 +116,7 @@ def transcribe_audio(
 def process_transcription_for_meeting(
     meeting_id: str,
     groq_client: Optional[Groq] = None,
-    supabase_client: Optional[Client] = None,
+    supabase_client: Optional[Client] = None
 ) -> Dict[str, Any]:
     """
     Orchestrates the Phase 5 transcription flow:
@@ -139,9 +134,7 @@ def process_transcription_for_meeting(
         meeting_record = get_meeting_record(meeting_id, client=db)
     except Exception as e:
         logger.error(f"Failed to fetch meeting record {meeting_id}: {str(e)}")
-        raise TranscriptionError(
-            f"Database failure retrieving meeting {meeting_id}.", original_error=e
-        )
+        raise TranscriptionError(f"Database failure retrieving meeting {meeting_id}.", original_error=e)
 
     if not meeting_record:
         raise TranscriptionError(f"Meeting with ID '{meeting_id}' not found.")
@@ -154,21 +147,19 @@ def process_transcription_for_meeting(
             status=MeetingStatus.FAILED,
             failure_stage="transcription",
             error_message="Meeting record has no associated audio storage path.",
-            client=db,
+            client=db
         )
-        raise TranscriptionError(
-            f"Meeting {meeting_id} has no storage path associated."
-        )
+        raise TranscriptionError(f"Meeting {meeting_id} has no storage path associated.")
 
     # 2. Update status to TRANSCRIBING
     try:
         update_meeting_status(
-            meeting_id=meeting_id, status=MeetingStatus.TRANSCRIBING, client=db
+            meeting_id=meeting_id,
+            status=MeetingStatus.TRANSCRIBING,
+            client=db
         )
     except Exception as e:
-        logger.error(
-            f"Failed to update status to TRANSCRIBING for {meeting_id}: {str(e)}"
-        )
+        logger.error(f"Failed to update status to TRANSCRIBING for {meeting_id}: {str(e)}")
 
     # 3. Download stored audio
     try:
@@ -181,7 +172,7 @@ def process_transcription_for_meeting(
             status=MeetingStatus.FAILED,
             failure_stage="transcription",
             error_message=safe_msg,
-            client=db,
+            client=db
         )
         raise TranscriptionError(safe_msg, original_error=e)
 
@@ -189,19 +180,19 @@ def process_transcription_for_meeting(
     filename = os.path.basename(storage_path) or "audio.mp3"
     try:
         transcript, elapsed_time = transcribe_audio(
-            audio_bytes=audio_bytes, filename=filename, client=groq_client
+            audio_bytes=audio_bytes,
+            filename=filename,
+            client=groq_client
         )
     except Exception as e:
         safe_msg = "Speech recognition failed during transcription stage."
-        logger.error(
-            f"Groq Whisper transcription failed for meeting {meeting_id}: {str(e)}"
-        )
+        logger.error(f"Groq Whisper transcription failed for meeting {meeting_id}: {str(e)}")
         update_meeting_status(
             meeting_id=meeting_id,
             status=MeetingStatus.FAILED,
             failure_stage="transcription",
             error_message=safe_msg,
-            client=db,
+            client=db
         )
         raise TranscriptionError(safe_msg, original_error=e)
 
@@ -216,9 +207,7 @@ def process_transcription_for_meeting(
         }
         updated_record = update_meeting_record(meeting_id, update_payload, client=db)
         if not updated_record:
-            raise DatabaseError(
-                f"Failed to persist transcript for meeting {meeting_id}"
-            )
+            raise DatabaseError(f"Failed to persist transcript for meeting {meeting_id}")
         return updated_record
     except Exception as e:
         safe_msg = "Failed to persist completed transcript in database."
@@ -228,6 +217,6 @@ def process_transcription_for_meeting(
             status=MeetingStatus.FAILED,
             failure_stage="transcription",
             error_message=safe_msg,
-            client=db,
+            client=db
         )
         raise TranscriptionError(safe_msg, original_error=e)

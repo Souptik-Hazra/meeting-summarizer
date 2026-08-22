@@ -22,7 +22,6 @@ _gemini_client: Optional[Any] = None
 
 class SummarizationError(Exception):
     """Exception raised when meeting summarization fails."""
-
     def __init__(self, message: str, original_error: Optional[Exception] = None):
         super().__init__(message)
         self.original_error = original_error
@@ -37,20 +36,15 @@ def get_gemini_client() -> Any:
         return _gemini_client
 
     if not settings.GEMINI_API_KEY:
-        raise SummarizationError(
-            "Gemini API key must be configured in environment variables."
-        )
+        raise SummarizationError("Gemini API key must be configured in environment variables.")
 
     try:
         from google import genai
-
         _gemini_client = genai.Client(api_key=settings.GEMINI_API_KEY)
         return _gemini_client
     except Exception as e:
         logger.error(f"Failed to initialize Google GenAI client: {str(e)}")
-        raise SummarizationError(
-            "Failed to initialize summarization service client.", original_error=e
-        )
+        raise SummarizationError("Failed to initialize summarization service client.", original_error=e)
 
 
 def load_prompt_template(version: str = "v1") -> str:
@@ -61,30 +55,26 @@ def load_prompt_template(version: str = "v1") -> str:
     prompt_file = prompts_dir / f"meeting_summary_{version}.txt"
 
     if not prompt_file.exists():
-        raise SummarizationError(
-            f"Prompt template version '{version}' not found at {prompt_file}"
-        )
+        raise SummarizationError(f"Prompt template version '{version}' not found at {prompt_file}")
 
     try:
         return prompt_file.read_text(encoding="utf-8")
     except Exception as e:
         logger.error(f"Failed to read prompt template {prompt_file}: {str(e)}")
-        raise SummarizationError(
-            f"Failed to load prompt template version '{version}'.", original_error=e
-        )
+        raise SummarizationError(f"Failed to load prompt template version '{version}'.", original_error=e)
 
 
 def generate_meeting_summary(
-    transcript: str, client: Optional[Any] = None, prompt_version: str = "v1"
+    transcript: str,
+    client: Optional[Any] = None,
+    prompt_version: str = "v1"
 ) -> Tuple[MeetingSummaryOutput, float]:
     """
     Calls Gemini 2.5 Flash with native structured output schema (MeetingSummaryOutput).
     Validates output through Pydantic as the final gate and measures execution time.
     """
     if not transcript or not transcript.strip():
-        raise SummarizationError(
-            "Cannot summarize empty or whitespace-only transcript."
-        )
+        raise SummarizationError("Cannot summarize empty or whitespace-only transcript.")
 
     gemini = client or get_gemini_client()
     system_instruction = load_prompt_template(prompt_version)
@@ -101,7 +91,6 @@ def generate_meeting_summary(
 
     try:
         from google.genai import types
-
         response = gemini.models.generate_content(
             model=model_name,
             contents=prompt_user_content,
@@ -114,9 +103,7 @@ def generate_meeting_summary(
         )
     except Exception as e:
         logger.error(f"Gemini 2.5 Flash API generation error: {str(e)}")
-        raise SummarizationError(
-            "Generative AI summarization service failed.", original_error=e
-        )
+        raise SummarizationError("Generative AI summarization service failed.", original_error=e)
 
     elapsed_time = round(time.perf_counter() - start_time, 2)
 
@@ -136,13 +123,8 @@ def generate_meeting_summary(
         else:
             raise ValueError("No structured text or parsed data in Gemini response.")
     except Exception as validation_exc:
-        logger.error(
-            f"Pydantic structured output validation failed on Gemini response: {str(validation_exc)}"
-        )
-        raise SummarizationError(
-            "Gemini response failed structured output validation.",
-            original_error=validation_exc,
-        )
+        logger.error(f"Pydantic structured output validation failed on Gemini response: {str(validation_exc)}")
+        raise SummarizationError("Gemini response failed structured output validation.", original_error=validation_exc)
 
     return validated_output, elapsed_time
 
@@ -151,7 +133,7 @@ def process_summarization_for_meeting(
     meeting_id: str,
     gemini_client: Optional[Any] = None,
     supabase_client: Optional[Client] = None,
-    prompt_version: str = "v1",
+    prompt_version: str = "v1"
 ) -> Dict[str, Any]:
     """
     Orchestrates the Phase 6 summarization flow:
@@ -169,19 +151,14 @@ def process_summarization_for_meeting(
         meeting_record = get_meeting_record(meeting_id, client=db)
     except Exception as e:
         logger.error(f"Database error fetching meeting {meeting_id}: {str(e)}")
-        raise SummarizationError(
-            f"Database failure retrieving meeting {meeting_id}.", original_error=e
-        )
+        raise SummarizationError(f"Database failure retrieving meeting {meeting_id}.", original_error=e)
 
     if not meeting_record:
         raise SummarizationError(f"Meeting with ID '{meeting_id}' not found.")
 
     # 2. Strict State Validation
     current_status = meeting_record.get("status")
-    if (
-        current_status != MeetingStatus.SUMMARIZING.value
-        and current_status != MeetingStatus.SUMMARIZING
-    ):
+    if current_status != MeetingStatus.SUMMARIZING.value and current_status != MeetingStatus.SUMMARIZING:
         raise SummarizationError(
             f"Meeting '{meeting_id}' is in status '{current_status}'. Summarization requires status 'SUMMARIZING'."
         )
@@ -195,16 +172,16 @@ def process_summarization_for_meeting(
             status=MeetingStatus.FAILED,
             failure_stage="summarization",
             error_message="Meeting has no transcript available for summarization.",
-            client=db,
+            client=db
         )
-        raise SummarizationError(
-            f"Meeting '{meeting_id}' has no transcript available for summarization."
-        )
+        raise SummarizationError(f"Meeting '{meeting_id}' has no transcript available for summarization.")
 
     # 4. Generate structured summary with Gemini 2.5 Flash
     try:
         summary_output, elapsed_time = generate_meeting_summary(
-            transcript=transcript, client=gemini_client, prompt_version=prompt_version
+            transcript=transcript,
+            client=gemini_client,
+            prompt_version=prompt_version
         )
     except Exception as e:
         safe_msg = "Generative AI summarization failed during processing."
@@ -214,7 +191,7 @@ def process_summarization_for_meeting(
             status=MeetingStatus.FAILED,
             failure_stage="summarization",
             error_message=safe_msg,
-            client=db,
+            client=db
         )
         raise SummarizationError(safe_msg, original_error=e)
 
@@ -234,9 +211,7 @@ def process_summarization_for_meeting(
         }
         updated_record = update_meeting_record(meeting_id, update_payload, client=db)
         if not updated_record:
-            raise DatabaseError(
-                f"Failed to persist summary record for meeting {meeting_id}"
-            )
+            raise DatabaseError(f"Failed to persist summary record for meeting {meeting_id}")
         return updated_record
     except Exception as e:
         safe_msg = "Failed to persist completed summary in database."
@@ -246,6 +221,6 @@ def process_summarization_for_meeting(
             status=MeetingStatus.FAILED,
             failure_stage="summarization",
             error_message=safe_msg,
-            client=db,
+            client=db
         )
         raise SummarizationError(safe_msg, original_error=e)
