@@ -88,7 +88,7 @@ def test_upload_audio_file_success():
         meeting_id="m1",
         file_content=b"test_audio",
         original_filename="sample.mp3",
-        client=mock_client
+        client=mock_client,
     )
 
     assert path == "meetings/m1/audio.mp3"
@@ -107,7 +107,7 @@ def test_upload_audio_file_failure():
             meeting_id="m2",
             file_content=b"test_audio",
             original_filename="sample.wav",
-            client=mock_client
+            client=mock_client,
         )
     assert "Failed to store audio file in cloud storage" in str(exc.value)
 
@@ -116,6 +116,6 @@ def test_delete_audio_file():
     mock_client = MagicMock()
     mock_storage = MagicMock()
     mock_client.storage.from_.return_value = mock_storage
-    
+
     assert delete_audio_file("meetings/m1/audio.mp3", client=mock_client) is True
     mock_storage.remove.assert_called_with(["meetings/m1/audio.mp3"])

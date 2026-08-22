@@ -1,10 +1,16 @@
 import pytest
 from pydantic import ValidationError
-from app.schemas.summary import ActionItem, MeetingSummaryOutput, MeetingSummarizeResponse
+from app.schemas.summary import (
+    ActionItem,
+    MeetingSummaryOutput,
+    MeetingSummarizeResponse,
+)
 
 
 def test_action_item_valid():
-    item = ActionItem(task="Deploy staging environment", owner="Alice", deadline="Friday")
+    item = ActionItem(
+        task="Deploy staging environment", owner="Alice", deadline="Friday"
+    )
     assert item.task == "Deploy staging environment"
     assert item.owner == "Alice"
     assert item.deadline == "Friday"
@@ -29,7 +35,7 @@ def test_meeting_summary_output_valid():
         "decisions": ["Deploy on Monday"],
         "action_items": [
             {"task": "Run end-to-end tests", "owner": "John", "deadline": "Sunday"}
-        ]
+        ],
     }
     output = MeetingSummaryOutput.model_validate(data)
     assert output.summary == "The team discussed the Q3 product release."
@@ -67,7 +73,7 @@ def test_meeting_summarize_response():
         action_items=[{"task": "Do X", "owner": None, "deadline": None}],
         summarization_time=2.45,
         model_name="gemini-2.5-flash",
-        prompt_version="v1"
+        prompt_version="v1",
     )
     assert resp.meeting_id == "meet-123"
     assert resp.status == "COMPLETED"

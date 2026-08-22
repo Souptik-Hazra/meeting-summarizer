@@ -17,7 +17,10 @@ if settings.FRONTEND_URL:
         if cleaned and cleaned not in origins:
             origins.append(cleaned)
 
-for default_origin in ["http://localhost:5173", "https://meeting-summarizer-app.netlify.app"]:
+for default_origin in [
+    "http://localhost:5173",
+    "https://meeting-summarizer-app.netlify.app",
+]:
     if default_origin not in origins:
         origins.append(default_origin)
 
@@ -44,4 +47,5 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)

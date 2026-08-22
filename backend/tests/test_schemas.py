@@ -8,13 +8,14 @@ from app.schemas.meeting import (
     MeetingResponse,
 )
 
+
 def test_meeting_status_enum():
     assert MeetingStatus.PENDING == "PENDING"
     assert MeetingStatus.TRANSCRIBING == "TRANSCRIBING"
     assert MeetingStatus.SUMMARIZING == "SUMMARIZING"
     assert MeetingStatus.COMPLETED == "COMPLETED"
     assert MeetingStatus.FAILED == "FAILED"
-    
+
     # Test valid and invalid conversion
     assert MeetingStatus("PENDING") == MeetingStatus.PENDING
     with pytest.raises(ValueError):
@@ -26,7 +27,7 @@ def test_meeting_create_schema():
         "meeting_id": "meet_123",
         "original_filename": "team_sync.mp3",
         "storage_path": "meetings/meet_123/audio/team_sync.mp3",
-        "status": "PENDING"
+        "status": "PENDING",
     }
     meeting = MeetingCreate(**data)
     assert meeting.meeting_id == "meet_123"
@@ -43,7 +44,7 @@ def test_meeting_status_update_schema():
     update = MeetingStatusUpdate(
         status=MeetingStatus.FAILED,
         failure_stage="transcription",
-        error_message="Network error"
+        error_message="Network error",
     )
     assert update.status == MeetingStatus.FAILED
     assert update.failure_stage == "transcription"
@@ -59,7 +60,9 @@ def test_meeting_response_schema():
         "summary": "The board discussed Q3 results.",
         "key_points": ["Revenue up 20%", "Hiring approved"],
         "decisions": ["Approved 2026 budget"],
-        "action_items": [{"task": "Prepare report", "owner": "Alice", "deadline": "Friday"}],
+        "action_items": [
+            {"task": "Prepare report", "owner": "Alice", "deadline": "Friday"}
+        ],
         "processing_time": 12.5,
     }
     response = MeetingResponse(**data)

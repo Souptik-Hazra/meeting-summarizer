@@ -1,5 +1,7 @@
 # AI Meeting Intelligence & Summarization Platform
 
+[![CI / Automated Testing & Build](https://github.com/Souptik-Hazra/meeting-summarizer/actions/workflows/ci.yml/badge.svg)](https://github.com/Souptik-Hazra/meeting-summarizer/actions/workflows/ci.yml)
+
 > **Live Application**: [https://meeting-summarizer-app.netlify.app](https://meeting-summarizer-app.netlify.app)
 
 An end-to-end AI application that converts meeting audio into structured, reliable meeting intelligence using **Groq Whisper**, **Google Gemini Flash**, **FastAPI**, and **React**.
