@@ -27,6 +27,19 @@ An end-to-end AI application that converts meeting audio into structured meeting
 
 ---
 
+## Screenshots
+
+### Pipeline Progress
+![Pipeline Progress](docs/processing_status.png)
+
+### Executive Summary & Telemetry
+![Executive Summary](docs/meeting_summary.png)
+
+### Key Discussion Points
+![Key Discussion Points](docs/key_points.png)
+
+---
+
 ## Architecture
 
 ![Architecture Diagram](docs/architecture_diagram.png)
