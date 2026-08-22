@@ -1,0 +1,17 @@
+name: Keep Render Backend Active
+
+on:
+  schedule:
+    # Runs every 14 minutes to prevent Render free-tier instance from sleeping (spins down after 15 mins)
+    - cron: '*/14 * * * *'
+  workflow_dispatch: # Allows manual trigger from the GitHub Actions tab
+
+jobs:
+  keep-warm:
+    name: Ping Render Health Endpoint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send Keep-Alive Ping
+        run: |
+          curl -s -f -m 30 "https://meeting-summarizer-40l8.onrender.com/health" || echo "Server is waking up..."

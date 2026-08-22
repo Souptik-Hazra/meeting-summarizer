@@ -115,8 +115,3 @@ cd backend
 pytest -v
 ```
 *(All 79 test cases passing)*
-
----
-
-## 📄 License
-MIT License
